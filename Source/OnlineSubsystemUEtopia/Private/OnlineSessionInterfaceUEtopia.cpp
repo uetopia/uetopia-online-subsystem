@@ -44,6 +44,7 @@ void FOnlineSessionInfoUEtopia::Init(const FOnlineSubsystemUEtopia& Subsystem)
 	FGuid OwnerGuid;
 	FPlatformMisc::CreateGuid(OwnerGuid);
 	SessionId = FUniqueNetIdString(OwnerGuid.ToString());
+	
 
 
 }
@@ -181,6 +182,7 @@ public:
 	}
 };
 
+
 bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionName, const FOnlineSessionSettings& NewSessionSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CreateSession"));
@@ -198,6 +200,9 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 		Session->NumOpenPublicConnections = NewSessionSettings.NumPublicConnections;	// always start with full public connections, local player will register later
 
 		Session->HostingPlayerNum = HostingPlayerNum;
+		Session->SessionSettings.bAllowJoinInProgress = true;
+		Session->SessionSettings.bAllowJoinViaPresence = false;
+		Session->SessionSettings.bIsDedicated = true;
 
 		check(UEtopiaSubsystem);
 		IOnlineIdentityPtr Identity = UEtopiaSubsystem->GetIdentityInterface();
@@ -213,8 +218,6 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 			Session->OwningUserId = MakeShareable(new FUniqueNetIdString(FString::Printf(TEXT("%d"), HostingPlayerNum)));
 			Session->OwningUserName = FString(TEXT("UEtopiaUser"));
 		}
-
-		Session->SessionSettings.bAllowJoinInProgress = true;
 
 		// Unique identifier of this build for compatibility
 		Session->SessionSettings.BuildUniqueId = GetBuildUniqueId();
@@ -356,16 +359,10 @@ bool FOnlineSessionUEtopia::StartSession(FName SessionName)
 		if (Session->SessionState == EOnlineSessionState::Pending ||
 			Session->SessionState == EOnlineSessionState::Ended)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session EOnlineSessionState::Pending or EOnlineSessionState::Ended"));
-			/* 
-			
-			muting this stuff...  It seems like InProgress is preventing all subsequent users from connecting 
-			Not sure if we need to do something here...  Seems like it's just lan stuff.
-			
-			*/
 			// If this lan match has join in progress disabled, shut down the beacon
+			// Testing muting this
 			//Result = UpdateLANStatus();
-			//Session->SessionState = EOnlineSessionState::InProgress;
+			Session->SessionState = EOnlineSessionState::InProgress;
 		}
 		else
 		{
@@ -481,23 +478,402 @@ bool FOnlineSessionUEtopia::IsPlayerInSession(FName SessionName, const FUniqueNe
 
 bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUniqueNetId> >& LocalPlayers, FName SessionName, const FOnlineSessionSettings& NewSessionSettings, TSharedRef<FOnlineSessionSearch>& SearchSettings)
 {
-	UE_LOG(LogOnline, Warning, TEXT("StartMatchmaking is not supported on this platform. Use FindSessions or FindSessionById."));
-	TriggerOnMatchmakingCompleteDelegates(SessionName, false);
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking"));
+	uint32 Return = ERROR_IO_PENDING;
+
+	// looking at online subsystem facebook friends to get this
+
+	//TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+	FString APIURL = UEtopiaSubsystem->GetAPIURL();
+	FString SessionQueryUrl = "http://" + APIURL + "/api/v1/game/" + GameKey + "/matchmaker/start";
+	UE_LOG(LogTemp, Log, TEXT("SessionQueryUrl: %s"), *SessionQueryUrl);
+	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
+
+	FString nonceString = "10951350917635";
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("nonce", "nonceString");
+	RequestJsonObj->SetStringField("encryption", encryption);
+	// We need to get some of our custom data out of the settings
+	// This just uses the first player.  
+	// TODO accept more than one.
+	RequestJsonObj->SetStringField("userid", LocalPlayers[0]->ToString());
+	FString matchType;
+	SearchSettings->QuerySettings.Get(SEARCH_KEYWORDS, matchType);
+	UE_LOG(LogTemp, Log, TEXT("matchType: %s"), *matchType);
+	//SearchSettings->QuerySettings.
+	RequestJsonObj->SetStringField("matchtype", matchType);
+	//RequestJsonObj->SetNumberField("amount", amount);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	if (IsRunningDedicatedServer())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking RUNNING ON DEDICATED SERVER!"));
+	}
+
+	FHttpModule* Http = &FHttpModule::Get();
+	if (!Http) { return false; }
+	if (!Http->IsHttpEnabled()) { return false; }
+
+
+	TSharedRef < IHttpRequest > Request = Http->CreateRequest();
+	Request->SetVerb("POST");
+	Request->SetURL(SessionQueryUrl);
+	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
+	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	Request->SetContentAsString(JsonOutputString);
+
+	// Copy the search pointer so we can keep it around
+	CurrentSessionSearch = SearchSettings;
+
+
+	Request->OnProcessRequestComplete().BindRaw(this, &FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete);
+	if (!Request->ProcessRequest()) { return false; }
+
+	//UE_LOG(LogOnline, Warning, TEXT("StartMatchmaking is not supported on this platform. Use FindSessions or FindSessionById."));
+	
 	return false;
+
+	//FPendingSessionQuery
+	//return Return;
+}
+
+
+void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete"));
+
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("Query sessions request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete JSON valid"));
+
+				bResult = true;
+				//TriggerOnFindSessionsCompleteDelegates(true);
+
+				// TODO set a bool so we can inform the UI that we are matchmaking, and offer options to cancel.
+
+				bCheckMatchmaker = true;
+				TimerMatchmakerSeconds = 0.0f;
+			}
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Query server list request failed. %s"), *ErrorStr);
+	}
+	// DO delegate?
+
 }
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName)
 {
 	UE_LOG(LogOnline, Warning, TEXT("CancelMatchmaking is not supported on this platform. Use CancelFindSessions."));
+
+
 	TriggerOnCancelMatchmakingCompleteDelegates(SessionName, false);
 	return false;
 }
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(const FUniqueNetId& SearchingPlayerId, FName SessionName)
 {
-	UE_LOG(LogOnline, Warning, TEXT("CancelMatchmaking is not supported on this platform. Use CancelFindSessions."));
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CancelMatchmaking"));
+
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+	FString APIURL = UEtopiaSubsystem->GetAPIURL();
+	FString SessionQueryUrl = "http://" + APIURL + "/api/v1/game/" + GameKey + "/matchmaker/cancel";
+	UE_LOG(LogTemp, Log, TEXT("SessionQueryUrl: %s"), *SessionQueryUrl);
+	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
+
+	FString nonceString = "10951350917635";
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("nonce", "nonceString");
+	RequestJsonObj->SetStringField("encryption", encryption);
+	RequestJsonObj->SetStringField("userid", SearchingPlayerId.ToString());
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	if (IsRunningDedicatedServer())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CancelMatchmaking RUNNING ON DEDICATED SERVER!"));
+	}
+
+	FHttpModule* Http = &FHttpModule::Get();
+	if (!Http) { return false; }
+	if (!Http->IsHttpEnabled()) { return false; }
+
+
+	TSharedRef < IHttpRequest > Request = Http->CreateRequest();
+	Request->SetVerb("POST");
+	Request->SetURL(SessionQueryUrl);
+	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
+	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	Request->SetContentAsString(JsonOutputString);
+
+	bCheckMatchmaker = false;
+
+
+	Request->OnProcessRequestComplete().BindRaw(this, &FOnlineSessionUEtopia::CancelMatchmaking_HttpRequestComplete);
+	if (!Request->ProcessRequest()) { return false; }
+
 	TriggerOnCancelMatchmakingCompleteDelegates(SessionName, false);
 	return false;
+}
+
+
+void FOnlineSessionUEtopia::CancelMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CancelMatchmaking_HttpRequestComplete"));
+
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("Query sessions request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CancelMatchmaking_HttpRequestComplete JSON valid"));
+
+				bResult = true;
+				//TriggerOnFindSessionsCompleteDelegates(true);
+
+				// TODO set a bool so we can inform the UI that we are matchmaking, and offer options to cancel.
+			}
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Query server list request failed. %s"), *ErrorStr);
+	}
+	// DO delegate
+
+}
+
+void FOnlineSessionUEtopia::CheckMatchmaking()
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking"));
+
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+	FString APIURL = UEtopiaSubsystem->GetAPIURL();
+	FString SessionQueryUrl = "http://" + APIURL + "/api/v1/game/" + GameKey + "/matchmaker/check";
+	UE_LOG(LogTemp, Log, TEXT("SessionQueryUrl: %s"), *SessionQueryUrl);
+	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
+
+	FString nonceString = "10951350917635";
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("nonce", "nonceString");
+	RequestJsonObj->SetStringField("encryption", encryption);
+	
+	RequestJsonObj->SetStringField("userid", UEtopiaSubsystem->GetIdentityInterface()->GetUniquePlayerId(0)->ToString());
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	if (IsRunningDedicatedServer())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking RUNNING ON DEDICATED SERVER!"));
+	}
+
+	FHttpModule* Http = &FHttpModule::Get();
+	if (!Http) { return; }
+	if (!Http->IsHttpEnabled()) { return; }
+
+
+	TSharedRef < IHttpRequest > Request = Http->CreateRequest();
+	Request->SetVerb("POST");
+	Request->SetURL(SessionQueryUrl);
+	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
+	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	Request->SetContentAsString(JsonOutputString);
+
+
+	Request->OnProcessRequestComplete().BindRaw(this, &FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete);
+	if (!Request->ProcessRequest()) { return; }
+
+	return;
+}
+
+
+void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete"));
+
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("Query sessions request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// parsing like we do in game instance.
+			FString JsonRaw = *HttpResponse->GetContentAsString();
+			TSharedPtr<FJsonObject> JsonParsed;
+			TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonRaw);
+			if (FJsonSerializer::Deserialize(JsonReader, JsonParsed))
+			{
+				bool Authorization = JsonParsed->GetBoolField("authorization");
+				bool Success = JsonParsed->GetBoolField("success");
+				bool MatchmakerServerReady = JsonParsed->GetBoolField("matchmakerServerReady");
+				bool MatchmakerJoinable = JsonParsed->GetBoolField("matchmakerJoinable");
+				FName SessionName = FName(*JsonParsed->GetStringField("session_id"));
+				FString session_host_address = JsonParsed->GetStringField("session_host_address");
+
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete JSON valid"));
+
+				//  check the matchmakerJoinable bool to make sure we can actually join.  
+				if (MatchmakerJoinable) {
+					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete MatchmakerJoinable"));
+					bResult = true;
+					
+					// CREATE THE SERVER SEARCH RESULTS RECORD, AND STICK OUR NEW SERVER INTO IT
+					// THis is a dupe from findsessionscomplete
+
+					
+
+					// Empty out the search results
+					// this is causing a read access violation. 
+
+					//CurrentSessionSearch = MakeShareable(new FOnlineSessionSearch());
+					//SessionSearch->SearchResults.Empty();
+
+					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Adding a session for this server "));
+
+					// Set up the data we need out of json
+					//FString session_host_address = Attributes["session_host_address"];  
+					FString split_delimiter = ":";
+					FString IPAddress = TEXT("");
+					FString Port = TEXT("");
+					session_host_address.Split(split_delimiter, &IPAddress, &Port);
+					UE_LOG(LogTemp, Log, TEXT("IPAddress: %s"), *IPAddress);
+					UE_LOG(LogTemp, Log, TEXT("Port: %s"), *Port);
+					FIPv4Address ip;
+					FIPv4Address::Parse(IPAddress, ip);
+					const TCHAR* TheIpTChar = *IPAddress;
+					bool isValid = true;
+					int32 PortInt = FCString::Atoi(*Port);
+
+
+					TSharedPtr<class FOnlineSessionSettings> NewSessionSettings = MakeShareable(new FOnlineSessionSettings());
+
+					// Add space in the search results array
+					FOnlineSessionSearchResult* NewResult = new (CurrentSessionSearch->SearchResults) FOnlineSessionSearchResult();
+
+					// look at HostSession here:  https://wiki.unrealengine.com/How_To_Use_Sessions_In_C%2B%2B
+					// They construct the settings first, then pass it to construct the session. maybe the info goes in that way as well?
+
+					FOnlineSession* NewSession = &NewResult->Session;
+					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Session Created "));
+
+					NewSession->SessionSettings.bIsDedicated = true;
+					NewSession->SessionSettings.bIsLANMatch = false;
+
+					// This adds the address to a custom field, which we don't really want.
+					// Leaving it for now for debug purposes.
+					FName key = "session_host_address";
+					NewSession->SessionSettings.Set(key, session_host_address);
+
+
+					//key = "serverKey";
+					//NewSession->SessionSettings.Set(key, Attributes["key"]);
+					//key = "serverTitle";
+					//NewSession->SessionSettings.Set(key, Attributes["title"]);
+					// TODO add any other custom match settings we care about.
+
+						
+
+
+
+					TriggerOnMatchmakingCompleteDelegates(SessionName, false);
+
+					// Turn off matchmaker check timer
+					bCheckMatchmaker = false;
+				}
+
+				
+			}
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Query server list request failed. %s"), *ErrorStr);
+	}
+	// DO delegate
+
 }
 
 bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TSharedRef<FOnlineSessionSearch>& SearchSettings)
@@ -642,11 +1018,6 @@ void FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete(FHttpRequestPt
 					{
 						UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Adding a session for this server "));
 
-						// Create an object that we'll copy the data to
-						//FOnlineSessionSettings NewServer;
-						// The wiki howto does it differently like this:
-						//TSharedPtr<class FOnlineSessionSettings> NewServer = MakeShareable(new FOnlineSessionSettings());
-
 						if (CurrentSessionSearch.IsValid())
 						{
 
@@ -675,10 +1046,6 @@ void FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete(FHttpRequestPt
 
 							// I've made a mess in here, but it works
 
-
-
-							// OLD STUFF
-
 							TSharedPtr<class FOnlineSessionSettings> NewSessionSettings = MakeShareable(new FOnlineSessionSettings());
 
 							// Add space in the search results array
@@ -693,59 +1060,8 @@ void FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete(FHttpRequestPt
 							FOnlineSession* NewSession = &NewResult->Session;
 							UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Session Created "));
 
-
-
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete 4 "));
-							//internetAddress->SetIp(ip.GetValue());
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete 5 "));
-
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete 6 "));
-
-
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Parsed IpAddress "));
-
-							// THis is not set on all servers yet, keeping it muted for now
-							//FString session_id = Attributes["session_id"];
-
-							// coped over from OnlineSessionInterfaceNull 677
-							//FOnlineSessionInfoUEtopia* SessionInfo = (FOnlineSessionInfoUEtopia*)NewSession->SessionInfo.Get();
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Got SessionInfo "));
-
-
-							//uint32 HostIp = 0;
-							//SessionInfo->HostAddr->GetIp(HostIp); // will return in host order
-							//SessionInfo->HostAddr->SetIp(0x7f000001);	// 127.0.0.1
-
-							//MakeShareable(&internetAddress);
-							// Crashes client
-							//bool setHostAddrSuccess = SessionInfo->SetHostAddr(internetAddress);
-
-							// Crashes Client
-							//SessionInfo->HostAddr = internetAddress;
-
-							//Crashes Client
-							//SessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(ip.Value, PortInt);
-
-							//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Set HostAddress "));
-							//SessionInfo->SessionId = SearchSessionInfo->SessionId;
-
-							//FOnlineSessionInfoUEtopia* NewSessionInfo;
-							//NewSessionInfo->HostAddr = internetAddress;
-							//NewSession->SessionInfo-> = NewSessionInfo;
-							//
-
-							//FUniqueNetIdString* NewNetIdString = new FUniqueNetIdString;
-							//NewNetIdString->
-							//NewNetIdString.UniqueNetIdStr = session_id;
-							//NewSessionInfo->SetSessionId(NewNetIdString);
-
-							//TSharedRef < FInternetAddr > internetAddress = new FInternetAddr();
-							//NewSession->SessionInfo.
-							//bool hostSuccess = NewSession->SessionInfo ->SetHostAddr(internetAddress);
-
 							NewSession->SessionSettings.bIsDedicated = true;
 							NewSession->SessionSettings.bIsLANMatch = false;
-							NewSession->SessionSettings.bAllowJoinInProgress = true;
 
 							// This adds the address to a custom field, which we don't really want.
 							// Leaving it for now for debug purposes.
@@ -851,8 +1167,9 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
 
 	// Don't join a session if already in one or hosting one
-	if (Session == NULL)
-	{
+	// Allowing this for now, since we can't join a session once we are already connected.
+	//if (Session == NULL)
+	//{
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Join 1"));
 		// Create a named session from the search result data
 		Session = AddNamedSession(SessionName, DesiredSession.Session);
@@ -923,11 +1240,11 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 				RegisterLocalPlayers(Session);
 			}
 		}
-	}
-	else
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Session (%s) already exists, can't join twice"), *SessionName.ToString());
-	}
+	//}
+	//else
+	//{
+	//	UE_LOG_ONLINE(Warning, TEXT("Session (%s) already exists, can't join twice"), *SessionName.ToString());
+	//}
 
 	if (Return != ERROR_IO_PENDING)
 	{
@@ -1004,7 +1321,8 @@ uint32 FOnlineSessionUEtopia::JoinLANSession(int32 PlayerNum, FNamedOnlineSessio
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Join LAN : SearchSession->SessionInfo.IsValid()"));
 	}
 
-
+	// Was testing to see what would happen, and "Fatal Error"
+	//if (Session->SessionInfo.IsValid() && SearchSession != nullptr)
 	if (Session->SessionInfo.IsValid() && SearchSession != nullptr && SearchSession->SessionInfo.IsValid())
 	{
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Join LAN VALID"));
@@ -1179,28 +1497,23 @@ bool FOnlineSessionUEtopia::RegisterPlayer(FName SessionName, const FUniqueNetId
 bool FOnlineSessionUEtopia::RegisterPlayers(FName SessionName, const TArray< TSharedRef<const FUniqueNetId> >& Players, bool bWasInvited)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players"));
-
 	bool bSuccess = false;
-
-	// This should not be called by anything other than the server /I think/
 	if (IsRunningDedicatedServer())
 	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players - RUNNING ON DEDICATED"));
 		
 		FNamedOnlineSession* Session = GetNamedSession(SessionName);
 		if (Session)
 		{
 			bSuccess = true;
-			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players : Got Session"));
 
-			for (int32 PlayerIdx = 0; PlayerIdx<Players.Num(); PlayerIdx++)
+			for (int32 PlayerIdx = 0; PlayerIdx < Players.Num(); PlayerIdx++)
 			{
 				const TSharedRef<const FUniqueNetId>& PlayerId = Players[PlayerIdx];
-				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players : Checking player"));
 
 				FUniqueNetIdMatcher PlayerMatch(*PlayerId);
 				if (Session->RegisteredPlayers.IndexOfByPredicate(PlayerMatch) == INDEX_NONE)
 				{
-					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players : Did not find player in Session->RegisteredPlayers"));
 					Session->RegisteredPlayers.Add(PlayerId);
 					RegisterVoice(*PlayerId);
 
@@ -1227,24 +1540,16 @@ bool FOnlineSessionUEtopia::RegisterPlayers(FName SessionName, const TArray< TSh
 		}
 
 		TriggerOnRegisterPlayersCompleteDelegates(SessionName, Players, bSuccess);
-		
 	}
 	return bSuccess;
 }
 
 bool FOnlineSessionUEtopia::UnregisterPlayer(FName SessionName, const FUniqueNetId& PlayerId)
 {
-	// Only do this on the server.
-	if (IsRunningDedicatedServer() == true) {
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session UNRegister Player"));
-		TArray< TSharedRef<const FUniqueNetId> > Players;
-		Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId)));
-		return UnregisterPlayers(SessionName, Players);
-	}
-	else {
-		return false;
-	}
-
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session UNRegister Player"));
+	TArray< TSharedRef<const FUniqueNetId> > Players;
+	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId)));
+	return UnregisterPlayers(SessionName, Players);
 }
 
 bool FOnlineSessionUEtopia::UnregisterPlayers(FName SessionName, const TArray< TSharedRef<const FUniqueNetId> >& Players)
@@ -1253,51 +1558,73 @@ bool FOnlineSessionUEtopia::UnregisterPlayers(FName SessionName, const TArray< T
 	bool bSuccess = true;
 
 	// TODO: inform the gameinstance that the player has left
-
-	FNamedOnlineSession* Session = GetNamedSession(SessionName);
-	if (Session)
+	if (IsRunningDedicatedServer())
 	{
-		for (int32 PlayerIdx = 0; PlayerIdx < Players.Num(); PlayerIdx++)
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session UNRegister Players - RUNNING ON DEDICATED"));
+
+		FNamedOnlineSession* Session = GetNamedSession(SessionName);
+		if (Session)
 		{
-			const TSharedRef<const FUniqueNetId>& PlayerId = Players[PlayerIdx];
-
-			FUniqueNetIdMatcher PlayerMatch(*PlayerId);
-			int32 RegistrantIndex = Session->RegisteredPlayers.IndexOfByPredicate(PlayerMatch);
-			if (RegistrantIndex != INDEX_NONE)
+			for (int32 PlayerIdx = 0; PlayerIdx < Players.Num(); PlayerIdx++)
 			{
-				Session->RegisteredPlayers.RemoveAtSwap(RegistrantIndex);
-				UnregisterVoice(*PlayerId);
+				const TSharedRef<const FUniqueNetId>& PlayerId = Players[PlayerIdx];
 
-				// update number of open connections
-				if (Session->NumOpenPublicConnections < Session->SessionSettings.NumPublicConnections)
+				FUniqueNetIdMatcher PlayerMatch(*PlayerId);
+				int32 RegistrantIndex = Session->RegisteredPlayers.IndexOfByPredicate(PlayerMatch);
+				if (RegistrantIndex != INDEX_NONE)
 				{
-					Session->NumOpenPublicConnections++;
+					Session->RegisteredPlayers.RemoveAtSwap(RegistrantIndex);
+					UnregisterVoice(*PlayerId);
+
+					// update number of open connections
+					if (Session->NumOpenPublicConnections < Session->SessionSettings.NumPublicConnections)
+					{
+						Session->NumOpenPublicConnections++;
+					}
+					else if (Session->NumOpenPrivateConnections < Session->SessionSettings.NumPrivateConnections)
+					{
+						Session->NumOpenPrivateConnections++;
+					}
 				}
-				else if (Session->NumOpenPrivateConnections < Session->SessionSettings.NumPrivateConnections)
+				else
 				{
-					Session->NumOpenPrivateConnections++;
+					UE_LOG_ONLINE(Warning, TEXT("Player %s is not part of session (%s)"), *PlayerId->ToDebugString(), *SessionName.ToString());
 				}
-			}
-			else
-			{
-				UE_LOG_ONLINE(Warning, TEXT("Player %s is not part of session (%s)"), *PlayerId->ToDebugString(), *SessionName.ToString());
 			}
 		}
-	}
-	else
-	{
-		UE_LOG_ONLINE(Warning, TEXT("No game present to leave for session (%s)"), *SessionName.ToString());
-		bSuccess = false;
-	}
+		else
+		{
+			UE_LOG_ONLINE(Warning, TEXT("No game present to leave for session (%s)"), *SessionName.ToString());
+			bSuccess = false;
+		}
 
-	TriggerOnUnregisterPlayersCompleteDelegates(SessionName, Players, bSuccess);
+		TriggerOnUnregisterPlayersCompleteDelegates(SessionName, Players, bSuccess);
+	}
 	return bSuccess;
 }
 
 void FOnlineSessionUEtopia::Tick(float DeltaTime)
 {
+	//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::Tick"));
 	SCOPE_CYCLE_COUNTER(STAT_Session_Interface);
 	TickLanTasks(DeltaTime);
+	TickMatchmakerTasks(DeltaTime);
+}
+
+void FOnlineSessionUEtopia::TickMatchmakerTasks(float DeltaTime)
+{
+	// TODO
+	if (bCheckMatchmaker) {
+		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::TickMatchmakerTask bCheckMatchmaker"));
+		TimerMatchmakerSeconds = TimerMatchmakerSeconds + DeltaTime;
+		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::TickMatchmakerTask TimerMatchmakerSeconds: %f "), TimerMatchmakerSeconds);
+		if (TimerMatchmakerSeconds > 10.0f) {
+			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::TickMatchmakerTask 10.0f"));
+			//TODO check
+			CheckMatchmaking();
+			TimerMatchmakerSeconds = 0.0f;
+		}
+	}
 }
 
 void FOnlineSessionUEtopia::TickLanTasks(float DeltaTime)

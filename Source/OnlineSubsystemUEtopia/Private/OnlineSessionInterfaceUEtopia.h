@@ -26,15 +26,41 @@ private:
 	FOnlineSessionUEtopia() :
 		UEtopiaSubsystem(NULL),
 		CurrentSessionSearch(NULL)
-	{}
+	{
+	}
 
 	/**
-	* Delegate called when a user /me request from facebook is complete
+	* Delegate called when a user /me request from uetopia is complete
 	*/
 	void FindOnlineSession_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
+	/* Matchmaker Start endpoint http complete */
+	void StartMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+	
+	/* Matchmaker Cancel endpoint http complete */
+	void CancelMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	/* Check Matchmaker timer handle */
+	//FTimerHandle CheckMatchmakerTimerHandle;
+
+	bool bCheckMatchmaker = false;
+	float TimerMatchmakerSeconds = 0.0f;
+
+	/* Matchmaker Cancel endpoint http complete */
+	void CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	
+
+
 	// not sure if we need this yet...  looking at the facebook subsystem....
 	//IHttpRequest* FPendingSessionQuery;
+
+	/**
+	* Ticks any lan beacon background tasks
+	*
+	* @param DeltaTime the time since the last tick
+	*/
+	void TickMatchmakerTasks(float DeltaTime);
 
 	/**
 	 * Ticks any lan beacon background tasks
@@ -324,6 +350,9 @@ public:
 	virtual void UnregisterLocalPlayer(const FUniqueNetId& PlayerId, FName SessionName, const FOnUnregisterLocalPlayerCompleteDelegate& Delegate) override;
 	virtual int32 GetNumSessions() override;
 	virtual void DumpSessionState() override;
+
+	void CheckMatchmaking();
+	//FUniqueNetId& ThisSearchingPlayerId;
 };
 
 typedef TSharedPtr<FOnlineSessionUEtopia, ESPMode::ThreadSafe> FOnlineSessionUEtopiaPtr;
