@@ -897,8 +897,13 @@ bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TShared
 		// remember the time at which we started search, as this will be used for a "good enough" ping estimation
 		SessionSearchStartInSeconds = FPlatformTime::Seconds();
 
-		// Check if its a Online query
-		OnlineReturn = FindOnlineSession();
+		// Run the online find
+		// get the UserKeyId out of the search settings, we need it to personalize the results
+		FName KeyUserKeyId = FName(TEXT("UserKeyId"));
+		FString UserKeyId = "";
+		SearchSettings->QuerySettings.Get(KeyUserKeyId, UserKeyId);
+		OnlineReturn = FindOnlineSession(UserKeyId);
+		
 
 		// Check if its a LAN query
 		//Return = FindLANSession();
@@ -932,7 +937,7 @@ bool FOnlineSessionUEtopia::FindSessionById(const FUniqueNetId& SearchingUserId,
 	return true;
 }
 
-uint32 FOnlineSessionUEtopia::FindOnlineSession()
+uint32 FOnlineSessionUEtopia::FindOnlineSession(FString UserKeyId)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession"));
 	uint32 Return = ERROR_IO_PENDING;
@@ -941,7 +946,7 @@ uint32 FOnlineSessionUEtopia::FindOnlineSession()
 	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
 	FString GameKey = UEtopiaSubsystem->GetGameKey();
 	FString APIURL = UEtopiaSubsystem->GetAPIURL();
-	FString SessionQueryUrl = "http://" + APIURL + "/api/v1/game/" + GameKey + "/servers/";
+	FString SessionQueryUrl = "http://" + APIURL + "/api/v1/game/" + GameKey + "/servers/" + UserKeyId;
 
 	if (IsRunningDedicatedServer())
 	{

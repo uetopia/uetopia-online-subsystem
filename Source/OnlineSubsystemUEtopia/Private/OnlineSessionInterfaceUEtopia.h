@@ -113,7 +113,7 @@ private:
 	*
 	* @return ERROR_SUCCESS if successful, an error code otherwise
 	*/
-	uint32 FindOnlineSession();
+	uint32 FindOnlineSession(FString UserKeyId);
 
 
 	/**
