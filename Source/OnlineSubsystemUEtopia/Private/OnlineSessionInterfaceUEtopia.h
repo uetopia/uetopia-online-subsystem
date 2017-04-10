@@ -2,7 +2,11 @@
 
 #pragma once
 
-#include "OnlineSessionInterface.h"
+#include "CoreMinimal.h"
+#include "UObject/CoreOnline.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "OnlineJsonSerializer.h"
+#include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUEtopiaTypes.h"
 #include "OnlineSubsystemUEtopiaPackage.h"
 #include "LANBeacon.h"
