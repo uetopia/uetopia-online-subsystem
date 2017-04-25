@@ -438,16 +438,17 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 
 			if (User.FromJson(ResponseStr))
 			{
-				
+
 				if (!User.UserId.IsEmpty())
 				{
 					// copy and construct the unique id
 					TSharedRef<FUserOnlineAccountUEtopia> UserRef(new FUserOnlineAccountUEtopia(User));
 					UserRef->UserIdPtr = MakeShareable(new FUniqueNetIdString(User.UserId));
-					// update/add cached entry for user
-					UserAccounts.Add(User.UserId, UserRef);
 					// update the access token
 					UserRef->AuthTicket = PendingRegisterUser.AccessToken;
+					// update/add cached entry for user
+					UserAccounts.Add(User.UserId, UserRef);
+
 					// keep track of user ids for local users
 					UserIds.Add(PendingRegisterUser.LocalUserNum, UserRef->GetUserId());
 
