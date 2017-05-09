@@ -372,6 +372,7 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia()
 		// Default to 30 seconds
 		MaxCheckElapsedTime = 30.f;
 	}
+	SocketExternalIpSet = false;
 }
 
 /*
@@ -438,7 +439,7 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 
 			if (User.FromJson(ResponseStr))
 			{
-
+				
 				if (!User.UserId.IsEmpty())
 				{
 					// copy and construct the unique id
@@ -452,7 +453,13 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 					// keep track of user ids for local users
 					UserIds.Add(PendingRegisterUser.LocalUserNum, UserRef->GetUserId());
 
-					//OnUetopiaLoginComplete.Broadcast();
+					// Grab the Socket.io ip address.  We need it to open the socket connection.  This is already in our User
+					SocketExternalIp = User.SocketIpAddress;
+					SocketExternalIpSet = true;
+
+					//Grab the firebaseUser.  We need it for the socket namespace.  This is already in our User
+					firebaseUser = User.firebaseUser;
+
 
 					bResult = true;
 				}

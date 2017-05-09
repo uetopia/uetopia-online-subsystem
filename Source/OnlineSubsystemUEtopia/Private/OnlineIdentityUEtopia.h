@@ -25,7 +25,7 @@ public:
 
 	// FUserOnlineAccount
 
-	virtual FString GetAccessToken() const override { return TEXT("DummyAuthTicket"); }
+	virtual FString GetAccessToken() const override { return AuthTicket; }
 	virtual bool GetAuthAttribute(const FString& AttrName, FString& OutAttrValue) const override;
 
 	// FUserOnlineAccountUEtopia
@@ -58,6 +58,10 @@ public:
 	FString Locale;
 	/** Ticket which is provided to user once authenticated by the online service */
 	FString AuthTicket;
+	/** IP Address to use for socket connections */
+	FString SocketIpAddress;
+	/** Firebase UID to use for socket connections */
+	FString firebaseUser;
 
         /** Additional key/value pair data related to auth */
 	TMap<FString, FString> AdditionalAuthData;
@@ -72,6 +76,8 @@ public:
 		ONLINE_JSON_SERIALIZE("name", RealName);
 		ONLINE_JSON_SERIALIZE("gender", Gender);
 		ONLINE_JSON_SERIALIZE("locale", Locale);
+		ONLINE_JSON_SERIALIZE("SocketIpAddress", SocketIpAddress);
+		ONLINE_JSON_SERIALIZE("firebaseUser", firebaseUser);
 	END_ONLINE_JSON_SERIALIZER
 
 };
@@ -153,6 +159,12 @@ public:
 	* @param DeltaTime the amount of time that has elapsed since the last tick
 	*/
 	void Tick(float DeltaTime);
+
+	// Populated through user login process
+	FString SocketExternalIp;
+	bool SocketExternalIpSet;
+
+	FString firebaseUser;
 
 private:
 

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine.h"
-//#include "Core.h"
+#include "Core.h"
 #include "Http.h"
 #include "Json.h"
 #include "OnlineSubsystemUEtopiaModule.h"
@@ -12,6 +12,10 @@
 //#include "OnlineSessionSettingsUEtopia.h"
 #include "Networking.h"
 #include "ModuleManager.h"
+#include "JsonUtilities.h"
+#include "SIOJsonValue.h"
+#include "sio_client.h"
+#include "SIOMessageConvertUEtopia.h"
 
 #define INVALID_INDEX -1
 
