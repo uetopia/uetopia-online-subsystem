@@ -53,6 +53,7 @@ enum ESIOConnectionCloseReason
 typedef TSharedPtr<class FOnlineSessionUEtopia, ESPMode::ThreadSafe> FOnlineSessionUEtopiaPtr;
 typedef TSharedPtr<class FOnlineProfileUEtopia, ESPMode::ThreadSafe> FOnlineProfileUEtopiaPtr;
 typedef TSharedPtr<class FOnlineFriendsUEtopia, ESPMode::ThreadSafe> FOnlineFriendsUEtopiaPtr;
+typedef TSharedPtr<class FOnlinePartyUEtopia, ESPMode::ThreadSafe> FOnlinePartyUEtopiaPtr;
 typedef TSharedPtr<class FOnlineUserCloudUEtopia, ESPMode::ThreadSafe> FOnlineUserCloudUEtopiaPtr;
 typedef TSharedPtr<class FOnlineLeaderboardsUEtopia, ESPMode::ThreadSafe> FOnlineLeaderboardsUEtopiaPtr;
 typedef TSharedPtr<class FOnlineVoiceImpl, ESPMode::ThreadSafe> FOnlineVoiceImplPtr;
@@ -357,6 +358,9 @@ private:
 
 	/** implementation of friends interface */
 	FOnlineFriendsUEtopiaPtr UEtopiaFriends;
+
+	/** implementation of party interface */
+	FOnlinePartyUEtopiaPtr UEtopiaParty;
 
 	/** Online async task runnable */
 	class FOnlineAsyncTaskManagerUEtopia* OnlineAsyncTaskThreadRunnable;

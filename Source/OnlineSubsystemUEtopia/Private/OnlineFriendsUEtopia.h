@@ -169,7 +169,7 @@ public:
 	/**
 	 * Constructor
 	 *
-	 * @param InSubsystem Facebook subsystem being used
+	 * @param InSubsystem UEtopia subsystem being used
 	 */
 	FOnlineFriendsUEtopia(class FOnlineSubsystemUEtopia* InSubsystem);
 

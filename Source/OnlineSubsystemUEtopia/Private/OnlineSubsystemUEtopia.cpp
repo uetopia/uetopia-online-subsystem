@@ -9,6 +9,7 @@
 #include "OnlineLeaderboardInterfaceUEtopia.h"
 #include "OnlineIdentityUEtopia.h"
 #include "OnlineFriendsUEtopia.h"
+#include "OnlinePartyUEtopia.h"
 #include "VoiceInterfaceImpl.h"
 #include "SIOLambdaRunnableUEtopia.h"
 #include "OnlineAchievementsInterfaceUEtopia.h"
@@ -25,7 +26,7 @@ IOnlineFriendsPtr FOnlineSubsystemUEtopia::GetFriendsInterface() const
 
 IOnlinePartyPtr FOnlineSubsystemUEtopia::GetPartyInterface() const
 {
-	return nullptr;
+	return UEtopiaParty;
 }
 
 IOnlineGroupsPtr FOnlineSubsystemUEtopia::GetGroupsInterface() const
@@ -216,6 +217,7 @@ bool FOnlineSubsystemUEtopia::Init()
 		AchievementsInterface = MakeShareable(new FOnlineAchievementsUEtopia(this));
 		VoiceInterface = MakeShareable(new FOnlineVoiceImpl(this));
 		UEtopiaFriends = MakeShareable(new FOnlineFriendsUEtopia(this));
+		UEtopiaParty = MakeShareable(new FOnlinePartyUEtopia(this));
 		if (!VoiceInterface->Init())
 		{
 			VoiceInterface = nullptr;
