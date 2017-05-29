@@ -451,6 +451,8 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 		EmitNative(FString("chat_message"), FString("testing"));
 	});
 
+	// Tell the Party Controller to load joined parties
+	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
 
 }
 

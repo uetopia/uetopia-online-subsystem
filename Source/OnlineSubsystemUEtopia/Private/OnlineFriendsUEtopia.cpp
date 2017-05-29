@@ -85,12 +85,10 @@ FOnlineFriendsUEtopia::FOnlineFriendsUEtopia(FOnlineSubsystemUEtopia* InSubsyste
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing FriendsUrl= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
-	GConfig->GetArray(TEXT("OnlineSubsystemFacebook.OnlineFriendsFacebook"), TEXT("FriendsFields"), FriendsFields, GEngineIni);
+	GConfig->GetArray(TEXT("OnlineSubsystemUEtopia.OnlineFriendsUEtopia"), TEXT("FriendsFields"), FriendsFields, GEngineIni);
 
-	// @HSL_BEGIN - Josh.May - 10/04/2016 - Removed deprecated 'username' parameter
 	// always required fields
 	FriendsFields.AddUnique(TEXT("name"));
-	// @HSL_END - Josh.May - 10/04/2016
 }
 
 FOnlineFriendsUEtopia::~FOnlineFriendsUEtopia()
