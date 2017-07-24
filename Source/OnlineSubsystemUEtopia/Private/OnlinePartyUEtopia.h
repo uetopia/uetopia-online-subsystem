@@ -95,6 +95,13 @@ public:
 	{}
 	
 	*/
+
+	/*
+	// Tried making a new constructor - this does not work either.
+	FOnlinePartyResultUEtopia(const TSharedRef<const FOnlinePartyId>& InPartyId)
+		: PartyId(InPartyId)
+	*/
+
 	
 	//~FOnlinePartyResultUEtopia()
 	//{}
@@ -175,13 +182,27 @@ public:
 	// This is not part of the OSS for some reason.  ???
 	bool FetchJoinedParties();
 
+	/** When a party invite arrives, we need to keep track of the party name, and the player name.  
+	// These Do not get sent along with the delegate...  Again...  Not sure why...
+	//  TODO research this and see if there is a better way to do it.
+	// For now, just storing them as strings here
+
+	// this is not going to work without breaking OSS compatability.
+	**/
+	//void SetLatestPartyInvitePartyTitle(FString LatestPartyInvitePartyTitleIncoming);
+	//void SetLatestPartyInviteSenderTitle(FString LatestPartyInviteSenderTitleIncoming);
+	//FString GetLatestPartyInvitePartyTitle();
+	//FString GetLatestPartyInviteSenderTitle();
+
+	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
+
 	/**
 	* List of all subscribe-able notifications
 	*
 	* OnPartyJoined
 	* OnPartyPromotionLockoutStateChanged
 	* OnPartyConfigChanged
-	* OnPartyDataChanged
+	* OnPartyDataReceived  // THIS IS WRONG IN THE SOURCE COMMENTS
 	* OnPartyMemberChanged
 	* OnPartyMemberExited
 	* OnPartyMemberJoined
@@ -200,9 +221,12 @@ private:
 	FOnlineSubsystemUEtopia* UEtopiaSubsystem;
 
 	void CreateParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnCreatePartyComplete Delegate);
-
+	void SendInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendPartyInvitationComplete Delegate);
 	
 	void FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+	void RejectInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	void LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnLeavePartyComplete Delegate);
 
 	/** List of joined parties */
 	struct FOnlineJoinedParties
@@ -211,4 +235,12 @@ private:
 	};
 
 	FOnlineJoinedParties OnlineJoinedParties;
+
+	
+
+	/** When a party invite arrives, we need to keep track of the party name, and the player name.
+	// These Do not get sent along with the delegate...  Again...  Not sure why,,,
+	**/
+	//FString LatestPartyInvitePartyTitle;
+	//FString LatestPartyInviteSenderTitle;
 };

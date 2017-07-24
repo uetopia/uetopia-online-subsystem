@@ -182,7 +182,6 @@ public:
 	}
 };
 
-
 bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionName, const FOnlineSessionSettings& NewSessionSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CreateSession"));
@@ -575,7 +574,8 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 				// TODO set a bool so we can inform the UI that we are matchmaking, and offer options to cancel.
 
-				bCheckMatchmaker = true;
+				// Legacy Polling matchmaker stuff - disabled.
+				//bCheckMatchmaker = true;
 				TimerMatchmakerSeconds = 0.0f;
 			}
 		}
@@ -596,6 +596,13 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 	// DO delegate?
 
 }
+
+bool FOnlineSessionUEtopia::OnMatchmakingStartedComplete(FName matchType, bool success)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::OnMatchmakingStartedComplete"));
+	return true;
+}
+
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName)
 {
@@ -837,17 +844,6 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					// Leaving it for now for debug purposes.
 					FName key = "session_host_address";
 					NewSession->SessionSettings.Set(key, session_host_address);
-
-
-					//key = "serverKey";
-					//NewSession->SessionSettings.Set(key, Attributes["key"]);
-					//key = "serverTitle";
-					//NewSession->SessionSettings.Set(key, Attributes["title"]);
-					// TODO add any other custom match settings we care about.
-
-						
-
-
 
 					TriggerOnMatchmakingCompleteDelegates(SessionName, false);
 

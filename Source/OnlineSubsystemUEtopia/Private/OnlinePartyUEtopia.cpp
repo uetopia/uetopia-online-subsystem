@@ -21,6 +21,14 @@ FOnlinePartyResultUEtopia::FOnlinePartyResultUEtopia(const TSharedRef<const FOnl
 }
 */
 
+/*
+// Tried making a new constructor - this does not work either.
+FOnlinePartyResultUEtopia::FOnlinePartyResultUEtopia(const TSharedRef<const FOnlinePartyId>& InPartyId)
+	: PartyId(InPartyId)
+{
+
+}
+*/
 
 bool FOnlinePartyResultUEtopia::CanLocalUserInvite(const FUniqueNetId& LocalUserId) const
 {
@@ -46,7 +54,7 @@ bool FOnlinePartyIdUEtopia::IsValid() const
 }
 FString FOnlinePartyIdUEtopia::ToString() const
 {
-	return "";
+	return key_id;
 }
 FString FOnlinePartyIdUEtopia::ToDebugString() const
 {
@@ -299,6 +307,9 @@ void FOnlinePartyUEtopia::CreateParty_HttpRequestComplete(FHttpRequestPtr HttpRe
 bool FOnlinePartyUEtopia::UpdateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyConfiguration& PartyConfig, bool bShouldRegenerateReservationKey, const FOnUpdatePartyComplete& Delegate /*= FOnUpdatePartyComplete()*/)
 
 {
+	// I think this is used when the team captain makes a change on the client, and needs to update the backend server.
+	// TODO verify
+
 	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
 	return false;
 }
@@ -312,7 +323,102 @@ bool FOnlinePartyUEtopia::JoinParty(const FUniqueNetId& LocalUserId, const IOnli
 bool FOnlinePartyUEtopia::LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnLeavePartyComplete& Delegate /*= FOnLeavePartyComplete() */)
 {
 	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
-	return false;
+	//return false;
+
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+
+	// Optional list of fields to query for each friend
+	FString FieldsStr;
+
+	// kick off http request to create the party
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::LeaveParty_HttpRequestComplete, Delegate);
+	FString TeamsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/leave");
+
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+	UE_LOG_ONLINE(Log, TEXT("GameKey: %s"), *GameKey);
+
+	FString PartyIdStr = PartyId.ToString();
+	UE_LOG_ONLINE(Log, TEXT("PartyIdStr: %s"), *PartyIdStr);
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
+	RequestJsonObj->SetStringField("teamKeyIdStr", PartyIdStr);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	HttpRequest->SetURL(TeamsUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
+}
+
+
+void FOnlinePartyUEtopia::LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnLeavePartyComplete Delegate)
+{
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+	FString PartyIdStr = "invalid";
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("LeaveParty_HttpRequestComplete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Check for an error.  Online Subsytem does not provide a way to report an error back to the user (that I can find)
+			// So if there's an error, report it with a partyInviteResponse Delegate
+			// TODO add a gneric error message delegate to the OSS!
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+				bool success = JsonObject->GetBoolField("response_successful");
+				if (!success)
+				{
+					FString message = JsonObject->GetStringField("response_message");
+					UE_LOG(LogOnline, Warning, TEXT("Request Unsuccessful. %s"), *message);
+
+					// TODO trigger the delegate
+				}
+			}
+
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Leave Party request failed. %s"), *ErrorStr);
+	}
+	return;
 }
 
 bool FOnlinePartyUEtopia::ApproveJoinRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode)
@@ -323,18 +429,244 @@ bool FOnlinePartyUEtopia::ApproveJoinRequest(const FUniqueNetId& LocalUserId, co
 bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData /*= FOnlinePartyData()*/, const FOnSendPartyInvitationComplete& Delegate /*= FOnSendPartyInvitationComplete()*/)
 {
 	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
-	return false;
+	//return false;
+
+
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+
+	// Optional list of fields to query for each friend
+	FString FieldsStr;
+
+	// kick off http request to create the party
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::SendInvitation_HttpRequestComplete, Delegate);
+	FString TeamsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/userInvite");
+
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+	UE_LOG_ONLINE(Log, TEXT("GameKey: %s"), *GameKey);
+	
+	FString PartyIdStr = PartyId.ToString();
+	UE_LOG_ONLINE(Log, TEXT("PartyIdStr: %s"), *PartyIdStr);
+
+	FString RecipientIdStr = Recipient.PlatformData;
+	UE_LOG_ONLINE(Log, TEXT("RecipientIdStr: %s"), *RecipientIdStr);
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
+	RequestJsonObj->SetStringField("teamKeyIdStr", PartyIdStr);
+	RequestJsonObj->SetStringField("userKeyIdStr", RecipientIdStr);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	HttpRequest->SetURL(TeamsUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
+}
+
+
+void FOnlinePartyUEtopia::SendInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendPartyInvitationComplete Delegate)
+{
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+	FString PartyIdStr = "invalid";
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("SendInvitation_HttpRequestComplete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Check for an error.  Online Subsytem does not provide a way to report an error back to the user (that I can find)
+			// So if there's an error, report it with a partyInviteResponse Delegate
+			// TODO add a gneric error message delegate to the OSS!
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+				bool success = JsonObject->GetBoolField("response_successful");
+				if (!success) 
+				{
+					FString message = JsonObject->GetStringField("response_message");
+					UE_LOG(LogOnline, Warning, TEXT("Request Unsuccessful. %s"), *message);
+
+					// TODO trigger the delegate
+				}
+			}
+
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Send Invitation request failed. %s"), *ErrorStr);
+	}
+	return;
 }
 
 bool FOnlinePartyUEtopia::AcceptInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId)
 {
-	return false;
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+
+	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
+
+	// Optional list of fields to query for each friend
+	FString FieldsStr;
+
+	// build the url
+	//FString FriendsQueryUrl = FriendsUrl.Replace(TEXT("`fields"), *FieldsStr, ESearchCase::IgnoreCase);
+	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
+
+	// kick off http request to reject the invite
+	// Using the reject complete function for now since we don't care too much about the result
+	// TODO do we need to do anything specific on AcceptComplete?
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete);
+	FString InviteRejectUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/userInviteAccept");
+
+
+	FString SenderIdStr = SenderId.ToString();
+	UE_LOG_ONLINE(Log, TEXT("SenderIdStr: %s"), *SenderIdStr);
+
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+
+	RequestJsonObj->SetStringField("userKeyIdStr", SenderIdStr);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	//FString OutputString = "GameKeyId=" + GameKey;
+	HttpRequest->SetURL(InviteRejectUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
 }
 
 bool FOnlinePartyUEtopia::RejectInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId)
 {
-	return false;
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+
+	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
+
+	// Optional list of fields to query for each friend
+	FString FieldsStr;
+
+	// build the url
+	//FString FriendsQueryUrl = FriendsUrl.Replace(TEXT("`fields"), *FieldsStr, ESearchCase::IgnoreCase);
+	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
+
+	// kick off http request to reject the invite
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete);
+	FString InviteRejectUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/userInviteReject");
+
+
+	FString SenderIdStr = SenderId.ToString();
+	UE_LOG_ONLINE(Log, TEXT("SenderIdStr: %s"), *SenderIdStr);
+
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+
+	RequestJsonObj->SetStringField("userKeyIdStr", SenderIdStr);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	//FString OutputString = "GameKeyId=" + GameKey;
+	HttpRequest->SetURL(InviteRejectUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
 }
+
+
+void FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+	FString PartyIdStr = "invalid";
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("RejectInvitation_HttpRequestComplete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Reject Invite request failed. %s"), *ErrorStr);
+	}
+	return;
+}
+
+
+
 
 void FOnlinePartyUEtopia::ClearInvitations(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId, const FOnlinePartyId* PartyId)
 {
@@ -355,6 +687,18 @@ bool FOnlinePartyUEtopia::PromoteMember(const FUniqueNetId& LocalUserId, const F
 
 bool FOnlinePartyUEtopia::UpdatePartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyData& PartyData)
 {
+	/**
+	* Set party data and broadcast to all members
+	* Only current data can be set and no history of past party data is preserved
+	* Party members notified of new data (see FOnPartyDataReceived)
+	*
+	* @param LocalUserId - user making the request
+	* @param PartyId - id of an existing party
+	* @param PartyData - data to send to all party members
+	* @param Delegate - called on completion
+	*
+	* @return true if task was started
+	*/
 	return false;
 }
 
@@ -415,7 +759,8 @@ bool FOnlinePartyUEtopia::GetPartyMembers(const FUniqueNetId& LocalUserId, const
 
 bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TArray<TSharedRef<IOnlinePartyJoinInfo>>& OutPendingInvitesArray) const
 {
-	return false;
+	OutPendingInvitesArray = PendingInvitesArray;
+	return true;
 }
 
 bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<IOnlinePartyPendingJoinRequestInfo>>& OutPendingJoinRequestArray) const
@@ -568,8 +913,8 @@ void FOnlinePartyUEtopia::FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr
 					if (!PartyIdStr.IsEmpty())
 					{
 						// I can't get this working.  TODO fix
-						//TSharedRef<FOnlinePartyIdUEtopia> PartyId(new FOnlinePartyIdUEtopia(PartyIdStr));
-						//FOnlinePartyTypeId PartyTypeId(0);
+						TSharedRef<FOnlinePartyIdUEtopia> PartyId(new FOnlinePartyIdUEtopia(PartyIdStr));
+						FOnlinePartyTypeId PartyTypeId(0);
 						
 						// This is trying to use the "explicit" constructor, which the compiler cannot find
 						//TSharedRef<FOnlinePartyResultUEtopia> PartyEntry(new FOnlinePartyResultUEtopia(PartyId, PartyTypeId));
@@ -615,9 +960,6 @@ void FOnlinePartyUEtopia::FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr
 	return;
 
 }
-
-
-
 
 
 

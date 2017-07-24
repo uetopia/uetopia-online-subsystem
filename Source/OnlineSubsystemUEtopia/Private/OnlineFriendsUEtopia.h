@@ -163,6 +163,7 @@ public:
 
 	// This does not exist in the OSS...  Why not?  
 	void UpdateFriend(TSharedRef<FOnlineFriendUEtopia> incomingFriendData);
+	void AddFriend(TSharedRef<FOnlineFriendUEtopia> incomingFriendData);
 
 	// FOnlineFriendsUEtopia
 
@@ -193,6 +194,9 @@ private:
 	void QueryRecentPlayers_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
 	void SendInvite_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendInviteComplete Delegate);
+
+	void AcceptInvite_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnAcceptInviteComplete Delegate);
+	void RejectInvite_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
 
 	/** Delegate called when reading the friends list is completed */

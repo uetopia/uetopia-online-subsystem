@@ -149,6 +149,8 @@ bool FOnlineSubsystemUEtopia::Tick(float DeltaTime)
 	if (IdentityInterface.IsValid())
 	{
 		IdentityInterface->Tick(DeltaTime);
+
+#if !UE_SERVER
 		if (IdentityInterface->SocketExternalIpSet) {
 			UE_LOG(LogTemp, Log, TEXT("[UETOPIA] IdentityInterface->SocketExternalIpSet"));
 			SocketExternalIp = IdentityInterface->SocketExternalIp;
@@ -161,6 +163,7 @@ bool FOnlineSubsystemUEtopia::Tick(float DeltaTime)
 			UE_LOG(LogTemp, Log, TEXT("SocketIO AddressAndPort: %s"), *SocketExternalIp);
 			Connect(SocketExternalIp);
 		}
+#endif
 	}
 
 	return true;
@@ -176,6 +179,9 @@ bool FOnlineSubsystemUEtopia::Init()
 
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Subsystem set up path"));
 
+	
+
+#if !UE_SERVER
 	// socketIO stuff
 	bShouldAutoConnect = true;
 	//bWantsInitializeComponent = true;
@@ -184,6 +190,7 @@ bool FOnlineSubsystemUEtopia::Init()
 	AddressAndPort = FString(TEXT("http://localhost:3000"));	//default to 127.0.0.1
 	SessionId = FString(TEXT("invalid"));
 	PrivateClient = new sio::client;
+#endif
 
 	// TODO set up the destructor stuff for this 
 
@@ -222,6 +229,9 @@ bool FOnlineSubsystemUEtopia::Init()
 		{
 			VoiceInterface = nullptr;
 		}
+
+		//SessionInterface->AddOnMatchmakingStartedDelegate_Handle(FOnMatchmakingStartedDelegate::CreateUObject(this, &FOnlineSubsystemUEtopia::OnMatchmakingStartedComplete));
+
 	}
 	else
 	{
@@ -318,6 +328,7 @@ FString FOnlineSubsystemUEtopia::GetGameKey()
 void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonObject* Query /*= nullptr*/, USIOJsonObject* Headers /*= nullptr*/)
 {	
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect"));
+#if !UE_SERVER
 	std::string StdAddressString = USIOMessageConvertUEtopia::StdString(InAddressAndPort);
 	if (InAddressAndPort.IsEmpty())
 	{
@@ -405,6 +416,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 		OnNativeEvent(FString("authenticate_success"), [](const FString& Event, const TSharedPtr<FJsonValue>& Message)
 		{
 			UE_LOG_ONLINE(Display, TEXT("authenticate_success incoming"));
+			
 
 		}, FString("/"));
 
@@ -412,6 +424,39 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 		OnNativeEvent(FString("test"), [](const FString& Event, const TSharedPtr<FJsonValue>& Message)
 		{
 			UE_LOG_ONLINE(Display, TEXT("namespace test incoming"));
+		}, FString("/"));
+
+		// listen for incoming friend invitations
+		OnNativeEvent(FString("friend_invitation"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("friend_invitation incoming"));
+			// Extract the data we need out of the event.
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString senderUserKeyId = "";
+			FString senderUserTitle = "";
+
+			JsonResponse.TryGetStringField("senderKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("senderUserTitle", senderUserTitle);
+
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::friend_invitation senderUserKeyId: %s"), *senderUserKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::friend_invitation senderUserTitle: %s"), *senderUserTitle);
+
+			// Convert the string IDs into the appropriate types
+			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+
+			// TODO store this senderTitle somewhere.  We're going to need it to display the Invite request UI dialog.
+			TSharedRef<FOnlineFriendUEtopia> FriendEntry(new FOnlineFriendUEtopia(senderUserKeyId));
+
+			TMap<FString, FString> Attributes;
+			Attributes.Add("key_id", senderUserKeyId);
+			Attributes.Add("title", senderUserTitle);
+
+			FriendEntry->AccountData = Attributes;
+			UEtopiaFriends->AddFriend(FriendEntry);
+
+			UEtopiaFriends->TriggerOnInviteReceivedDelegates(*localUNetId, *SenderUserIdPtr);
 		}, FString("/"));
 
 		// listen for incoming friend changes
@@ -424,7 +469,307 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			// Meanwhile, just signal a reload.
 			this->GetFriendsInterface()->DeleteFriendsList(0, "default");
 			this->GetFriendsInterface()->ReadFriendsList(0, "default");
+
+			// Trigger the delegate to cause the UI to update
+			this->GetFriendsInterface()->TriggerOnFriendsChangeDelegates(0);
 			
+		}, FString("/"));
+
+		// listen for incoming matchmaker started message 
+		OnNativeEvent(FString("matchmaker_started"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("matchmaker_started incoming"));
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString matchType = JsonResponse.GetStringField("matchType");
+			FName ConvertedmatchType = FName(*matchType);
+			// Trigger the delegate to cause the UI to update
+			this->GetSessionInterface()->TriggerOnMatchmakingStartedDelegates(ConvertedmatchType, true);
+
+			//this->OnMatchmakingStartedComplete("test", true);
+
+		}, FString("/"));
+
+		// listen for incoming matchmaker_complete messages
+		OnNativeEvent(FString("matchmaker_complete"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+
+			UE_LOG_ONLINE(Display, TEXT("matchmaker_complete incoming"));
+			// Extract the data we need out of the event.
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+
+			bool MatchmakerServerReady = JsonResponse.GetBoolField("matchmakerServerReady");
+			bool MatchmakerJoinable = JsonResponse.GetBoolField("matchmakerJoinable");
+			FName SessionName = FName(*JsonResponse.GetStringField("session_id"));
+			FString matchType = JsonResponse.GetStringField("matchType");
+			FString session_host_address = JsonResponse.GetStringField("session_host_address");
+
+			bool bResult = false;
+
+			//  check the matchmakerJoinable bool to make sure we can actually join.  
+			if (MatchmakerJoinable) {
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] matchmaker_complete MatchmakerJoinable"));
+				bResult = true;
+
+				// CREATE THE SERVER SEARCH RESULTS RECORD, AND STICK OUR NEW SERVER INTO IT
+				// THis is a dupe from findsessionscomplete
+
+
+
+				// Empty out the search results
+				// this is causing a read access violation. 
+
+				//CurrentSessionSearch = MakeShareable(new FOnlineSessionSearch());
+				//SessionSearch->SearchResults.Empty();
+
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] matchmaker_complete Adding a session for this server "));
+
+				// Set up the data we need out of json
+				//FString session_host_address = Attributes["session_host_address"];  
+				FString split_delimiter = ":";
+				FString IPAddress = TEXT("");
+				FString Port = TEXT("");
+				session_host_address.Split(split_delimiter, &IPAddress, &Port);
+				UE_LOG(LogTemp, Log, TEXT("IPAddress: %s"), *IPAddress);
+				UE_LOG(LogTemp, Log, TEXT("Port: %s"), *Port);
+				FIPv4Address ip;
+				FIPv4Address::Parse(IPAddress, ip);
+				const TCHAR* TheIpTChar = *IPAddress;
+				bool isValid = true;
+				int32 PortInt = FCString::Atoi(*Port);
+
+
+				TSharedPtr<class FOnlineSessionSettings> NewSessionSettings = MakeShareable(new FOnlineSessionSettings());
+
+				// Set up a blank CurrentSessionSearch
+				//TSharedPtr<class FOnlineSearchSettings> SearchSettings;
+				TSharedPtr<class FOnlineSearchSettings> SearchSettings;
+				SearchSettings = MakeShareable(new FOnlineSearchSettings());
+
+				TSharedPtr<class FOnlineSessionSettings> SessionSettings;
+				SessionSettings = MakeShareable(new FOnlineSessionSettings());
+
+				TSharedPtr<class FOnlineSessionSearch> SessionSearch;
+				SessionSearch = MakeShareable(new FOnlineSessionSearch());
+
+
+
+				//TSharedRef<FOnlineSessionSearch> SearchSettingsRef(new SessionInterface->CurrentSessionSearch); //SearchSettings.ToSharedRef();
+
+				//SearchSettings = MakeShareable(new FOnlineSessionSettings(false, false));
+				
+				//SearchSettings->QuerySettings.Set(SEARCH_KEYWORDS, matchType, EOnlineComparisonOp::Equals);
+				//TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SearchSettings.ToSharedRef();
+
+				SessionInterface->CurrentSessionSearch = SessionSearch;
+
+
+				// Add space in the search results array
+				FOnlineSessionSearchResult* NewResult = new (SessionInterface->CurrentSessionSearch->SearchResults) FOnlineSessionSearchResult();
+
+				// look at HostSession here:  https://wiki.unrealengine.com/How_To_Use_Sessions_In_C%2B%2B
+				// They construct the settings first, then pass it to construct the session. maybe the info goes in that way as well?
+
+				FOnlineSession* NewSession = &NewResult->Session;
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Session Created "));
+
+				NewSession->SessionSettings.bIsDedicated = true;
+				NewSession->SessionSettings.bIsLANMatch = false;
+
+				// This adds the address to a custom field, which we don't really want.
+				// Leaving it for now for debug purposes.
+				FName key = "session_host_address";
+				NewSession->SessionSettings.Set(key, session_host_address);
+
+				SessionInterface->TriggerOnMatchmakingCompleteDelegates(SessionName, false);
+
+				// Turn off matchmaker check timer
+				// Legacy from polling
+				//bCheckMatchmaker = false;
+			}
+			
+		}, FString("/"));
+
+		// listen for incoming party invitations
+		OnNativeEvent(FString("party_invitation"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("party_invitation incoming"));
+			// Extract the data we need out of the event.
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString partyKeyId = "";
+			FString partyTitle = "";
+			FString senderUserKeyId = "";
+			FString senderUserTitle = "";
+			FString recipientUserKeyId = "";
+
+			JsonResponse.TryGetStringField("key_id", partyKeyId);
+			JsonResponse.TryGetStringField("title", partyTitle);
+			JsonResponse.TryGetStringField("senderKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("senderUserTitle", senderUserTitle);
+			JsonResponse.TryGetStringField("userKeyId", recipientUserKeyId);
+
+			//UE_LOG(LogTemp, Log, TEXT("2) partyKeyId: %s"), &partyKeyId;
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation partyKeyId: %s"), *partyKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation partyTitle: %s"), *partyTitle);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation senderUserKeyId: %s"), *senderUserKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation senderUserTitle: %s"), *senderUserTitle);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation userKeyId: %s"), *recipientUserKeyId);
+
+			// The OSS does not support sending the player title or team title through the delegate, 
+			// So we're doing it here for now
+
+			//UEtopiaParty->SetLatestPartyInvitePartyTitle(partyTitle);
+			//UEtopiaParty->SetLatestPartyInviteSenderTitle(senderUserTitle);
+
+
+			// create an IOnlinePartyJoinInfo
+			FOnlinePartyData PartyData;
+			PartyData.SetAttribute("partyTitle", partyTitle);
+			PartyData.SetAttribute("partyKeyId", partyKeyId);
+			PartyData.SetAttribute("senderUserKeyId", senderUserKeyId);
+			PartyData.SetAttribute("senderUserTitle", senderUserTitle);
+			PartyData.SetAttribute("invited", true);
+			PartyData.SetAttribute("inviteAccepted", false);
+
+			// Add the party info to the array of invited parties.
+			TSharedRef<IOnlinePartyJoinInfoUEtopia> PartyJoinInfo = MakeShareable(new IOnlinePartyJoinInfoUEtopia(PartyData, recipientUserKeyId));
+			UEtopiaParty->PendingInvitesArray.Add(PartyJoinInfo);
+
+			
+
+			// Convert the string IDs into the appropriate types
+			TSharedPtr <const FUniqueNetId> localUNetId =  this->GetIdentityInterface()->GetUniquePlayerId(0);
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			const FString& partyKeyIdConst = partyKeyId;
+			TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
+			
+
+			// DEFINE_ONLINE_DELEGATE_THREE_PARAM(OnPartyInviteReceived, const FUniqueNetId& /*LocalUserId*/, const FOnlinePartyId& /*PartyId*/, const FUniqueNetId& /*SenderId*/);
+			this->GetPartyInterface()->TriggerOnPartyInviteReceivedDelegates(*localUNetId, *PartyIdPtr, *SenderUserIdPtr);
+
+
+		}, FString("/"));
+
+		// listen for incoming party invitation response notifications
+		OnNativeEvent(FString("party_invitation_response"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("party_invitation_response incoming"));
+
+
+			// Extract the data we need out of the event.
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString partyKeyId = "";
+			FString senderUserKeyId = "";
+			FString responseMessage = "";
+
+			JsonResponse.TryGetStringField("key_id", partyKeyId);
+			JsonResponse.TryGetStringField("senderKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("response", responseMessage);
+
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::team_invitation partyKeyId: %s"), *partyKeyId);
+
+			// Convert the string IDs into the appropriate types
+			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			const FString& partyKeyIdConst = partyKeyId;
+			TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
+
+			if (responseMessage == "Accepted") {
+				UE_LOG_ONLINE(Display, TEXT("party_invitation_response accepted"));
+				this->GetPartyInterface()->TriggerOnPartyInviteResponseReceivedDelegates(*localUNetId, *PartyIdPtr, *SenderUserIdPtr, EInvitationResponse::Accepted);
+			}
+			else
+			{
+				UE_LOG_ONLINE(Display, TEXT("party_invitation_response rejected"));
+				this->GetPartyInterface()->TriggerOnPartyInviteResponseReceivedDelegates(*localUNetId, *PartyIdPtr, *SenderUserIdPtr, EInvitationResponse::Rejected);
+			}
+
+		}, FString("/"));
+
+		// listen for incoming party change notifications
+		OnNativeEvent(FString("party_changed"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("party_changed incoming"));
+
+			// Extract the data we need out of the event.
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+
+			bool purged = false;
+
+			JsonResponse.TryGetBoolField("purged", purged);
+
+			if (purged)
+			{
+				UE_LOG_ONLINE(Display, TEXT("party purged"));
+			}
+			else
+			{
+				UE_LOG_ONLINE(Display, TEXT("TODO update party"));
+			}
+
+			FString partyTitle = "";
+			FString partyKeyId = "";
+			FString PartySizeMax = "0"; // just treating this as a string in here.  
+			bool userIsCaptainTemp = false;
+
+
+			JsonResponse.TryGetStringField("key_id", partyKeyId);
+			JsonResponse.TryGetStringField("title", partyTitle);
+			JsonResponse.TryGetStringField("teamSizeMaxStr", PartySizeMax);
+			JsonResponse.TryGetBoolField("userIsCaptain", userIsCaptainTemp);
+
+			// [2017.07.12-02.51.37:587][439]LogTemp: 2) Received a response: {"key_id":5632724383563776,"members":[{"applicant":false,"approved":true,"captain":false,"denied":false,"invited":false,"joined":true,"key_id":5665241580961792,"order":100,"userKeyId":5112991330598912,"userTitle":"Ed-UEtopia"},{"applicant":false,"approved":true,"captain":true,"denied":false,"invited":false,"joined":true,"key_id":5704536236752896,"order":1,"userKeyId":5693417237512192,"userTitle":"Ed Colmar"}],"recruiting":true,"teamAvatarTheme":null,"teamFull":false,"teamSizeCurrent":1,"teamSizeMax":null,"title":"Ed Colmar's Team"}
+
+			const TArray<TSharedPtr<FJsonValue>>& membersArray = JsonResponse.GetArrayField("members");
+
+			FString userTitleTemp = "";
+			FString userKeyIdTemp = "";
+			bool captainTemp = false;
+			FString AttributePrefix = "";
+			
+
+			// Construct a FOnlinePartyData to send along with the delegate
+			TSharedRef<FOnlinePartyData> PartyData = MakeShareable(new FOnlinePartyData());
+			//FOnlinePartyData PartyData;
+
+			for (int32 Index = 0; Index < membersArray.Num(); Index++)
+			{
+				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] OSS party_changed - Adding Member"));
+				membersArray[Index]->AsObject()->TryGetStringField("userTitle", userTitleTemp);
+				membersArray[Index]->AsObject()->TryGetStringField("userKeyId", userKeyIdTemp);
+				membersArray[Index]->AsObject()->TryGetBoolField("captain", captainTemp);
+
+
+				FString IndexString = FString::FromInt(Index);
+				AttributePrefix = "member:" + IndexString + ":";
+
+				PartyData->SetAttribute(AttributePrefix + "title", userTitleTemp);
+				PartyData->SetAttribute(AttributePrefix + "key_id", userKeyIdTemp);
+				PartyData->SetAttribute(AttributePrefix + "captain", captainTemp);
+			} 
+
+			// set all the general party fields
+			PartyData->SetAttribute("member_count", membersArray.Num());
+			PartyData->SetAttribute("title", partyTitle);
+			PartyData->SetAttribute("key_id", partyKeyId);
+			PartyData->SetAttribute("size_max", PartySizeMax);
+			PartyData->SetAttribute("size_current", membersArray.Num());
+			PartyData->SetAttribute("userIsCaptain", userIsCaptainTemp);
+			
+
+			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
+			const FString& partyKeyIdConst = partyKeyId;
+			TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
+
+
+			this->GetPartyInterface()->TriggerOnPartyDataReceivedDelegates(*localUNetId, *PartyIdPtr, PartyData);
+			
+
 		}, FString("/"));
 
 		std::map<std::string, std::string> QueryMap = {};
@@ -453,14 +798,17 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 	// Tell the Party Controller to load joined parties
 	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
-
+#endif
 }
 
+
+#if !UE_SERVER
 void FOnlineSubsystemUEtopia::OnConnected(sio::event &)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect OnConnected()"));
 	return;
 }
+
 
 void FOnlineSubsystemUEtopia::EmitRaw(const FString& EventName, const sio::message::list& MessageList, TFunction<void(const sio::message::list&)> ResponseFunction, const FString& Namespace)
 {
@@ -566,3 +914,4 @@ void FOnlineSubsystemUEtopia::OnRawEvent(const FString& EventName, TFunction< vo
 		}, TStatId(), nullptr, ENamedThreads::GameThread);
 	}));
 }
+#endif

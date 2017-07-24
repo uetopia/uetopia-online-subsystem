@@ -11,6 +11,9 @@
 #include "OnlineSubsystemUEtopiaPackage.h"
 #include "LANBeacon.h"
 
+
+
+
 /**
  * Interface definition for the online services session services
  * Session services are defined as anything related managing a session
@@ -37,6 +40,8 @@ private:
 	* Delegate called when a user /me request from uetopia is complete
 	*/
 	void FindOnlineSession_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	
 
 	/* Matchmaker Start endpoint http complete */
 	void StartMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
@@ -264,6 +269,7 @@ public:
 	virtual ~FOnlineSessionUEtopia() {}
 	//FOnlineSessionUEtopia();
 
+	
 	FNamedOnlineSession* GetNamedSession(FName SessionName) override
 	{
 		FScopeLock ScopeLock(&SessionLock);
@@ -328,6 +334,8 @@ public:
 	//virtual bool DestroySession(FName SessionName) override; // 4.10
 	virtual bool IsPlayerInSession(FName SessionName, const FUniqueNetId& UniqueId) override;
 	virtual bool StartMatchmaking(const TArray< TSharedRef<const FUniqueNetId> >& LocalPlayers, FName SessionName, const FOnlineSessionSettings& NewSessionSettings, TSharedRef<FOnlineSessionSearch>& SearchSettings) override;
+	// ADDED BY UETOPIA
+	virtual bool OnMatchmakingStartedComplete(FName matchType, bool success) override;
 	virtual bool CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName) override;
 	virtual bool CancelMatchmaking(const FUniqueNetId& SearchingPlayerId, FName SessionName) override;
 	virtual bool FindSessions(int32 SearchingPlayerNum, const TSharedRef<FOnlineSessionSearch>& SearchSettings) override;
