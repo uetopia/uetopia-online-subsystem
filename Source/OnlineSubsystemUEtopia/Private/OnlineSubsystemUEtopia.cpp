@@ -540,48 +540,37 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 				bool isValid = true;
 				int32 PortInt = FCString::Atoi(*Port);
 
+				// Check for an existing session
+				FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
+				if (Session == NULL)
+				{
+					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] matchmaker_complete Session not found - Creating a new one"));
+					TSharedPtr<class FOnlineSessionSettings> SessionSettings;
+					SessionSettings = MakeShareable(new FOnlineSessionSettings());
 
-				TSharedPtr<class FOnlineSessionSettings> NewSessionSettings = MakeShareable(new FOnlineSessionSettings());
+					// This adds the address to a custom field,
+					FName key = "session_host_address";
+					SessionSettings->Set(key, session_host_address);
 
-				// Set up a blank CurrentSessionSearch
-				//TSharedPtr<class FOnlineSearchSettings> SearchSettings;
-				TSharedPtr<class FOnlineSearchSettings> SearchSettings;
-				SearchSettings = MakeShareable(new FOnlineSearchSettings());
+					SessionSettings->bIsDedicated = true;
+					SessionSettings->bIsLANMatch = false;
+					SessionSettings->bAllowJoinInProgress = true;
+					SessionSettings->bAllowJoinViaPresence = false;
 
-				TSharedPtr<class FOnlineSessionSettings> SessionSettings;
-				SessionSettings = MakeShareable(new FOnlineSessionSettings());
+					Session = SessionInterface->AddNamedSession(SessionName, *SessionSettings);
+					check(Session);
+					Session->SessionState = EOnlineSessionState::Starting;
 
-				TSharedPtr<class FOnlineSessionSearch> SessionSearch;
-				SessionSearch = MakeShareable(new FOnlineSessionSearch());
+					// Setup the host session info
+					FOnlineSessionInfoUEtopia* NewSessionInfo = new FOnlineSessionInfoUEtopia();
+					//NewSessionInfo->Init(*UEtopiaSubsystem);
+					//FInternetAddr* NewIPAddress = new FInternetAddr();
+					NewSessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr();
+					NewSessionInfo->HostAddr->SetIp(TheIpTChar, isValid);
+					NewSessionInfo->HostAddr->SetPort(PortInt);
 
-
-
-				//TSharedRef<FOnlineSessionSearch> SearchSettingsRef(new SessionInterface->CurrentSessionSearch); //SearchSettings.ToSharedRef();
-
-				//SearchSettings = MakeShareable(new FOnlineSessionSettings(false, false));
-				
-				//SearchSettings->QuerySettings.Set(SEARCH_KEYWORDS, matchType, EOnlineComparisonOp::Equals);
-				//TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SearchSettings.ToSharedRef();
-
-				SessionInterface->CurrentSessionSearch = SessionSearch;
-
-
-				// Add space in the search results array
-				FOnlineSessionSearchResult* NewResult = new (SessionInterface->CurrentSessionSearch->SearchResults) FOnlineSessionSearchResult();
-
-				// look at HostSession here:  https://wiki.unrealengine.com/How_To_Use_Sessions_In_C%2B%2B
-				// They construct the settings first, then pass it to construct the session. maybe the info goes in that way as well?
-
-				FOnlineSession* NewSession = &NewResult->Session;
-				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Session Created "));
-
-				NewSession->SessionSettings.bIsDedicated = true;
-				NewSession->SessionSettings.bIsLANMatch = false;
-
-				// This adds the address to a custom field, which we don't really want.
-				// Leaving it for now for debug purposes.
-				FName key = "session_host_address";
-				NewSession->SessionSettings.Set(key, session_host_address);
+					Session->SessionInfo = MakeShareable(NewSessionInfo);
+				}
 
 				SessionInterface->TriggerOnMatchmakingCompleteDelegates(SessionName, false);
 
