@@ -56,6 +56,7 @@ enum ESIOConnectionCloseReason
 /** Forward declarations of all interface classes */
 typedef TSharedPtr<class FOnlineSessionUEtopia, ESPMode::ThreadSafe> FOnlineSessionUEtopiaPtr;
 typedef TSharedPtr<class FOnlineProfileUEtopia, ESPMode::ThreadSafe> FOnlineProfileUEtopiaPtr;
+typedef TSharedPtr<class FOnlineChatUEtopia, ESPMode::ThreadSafe> FOnlineChatUEtopiaPtr;
 typedef TSharedPtr<class FOnlineFriendsUEtopia, ESPMode::ThreadSafe> FOnlineFriendsUEtopiaPtr;
 typedef TSharedPtr<class FOnlinePartyUEtopia, ESPMode::ThreadSafe> FOnlinePartyUEtopiaPtr;
 typedef TSharedPtr<class FOnlineUserCloudUEtopia, ESPMode::ThreadSafe> FOnlineUserCloudUEtopiaPtr;
@@ -379,6 +380,9 @@ private:
 
 	/** Interface for achievements */
 	FOnlineAchievementsUEtopiaPtr AchievementsInterface;
+
+	/** implementation of chat interface */
+	FOnlineChatUEtopiaPtr UEtopiaChat;
 
 	/** implementation of friends interface */
 	FOnlineFriendsUEtopiaPtr UEtopiaFriends;

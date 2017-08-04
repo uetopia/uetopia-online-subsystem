@@ -9,6 +9,7 @@
 #include "OnlineLeaderboardInterfaceUEtopia.h"
 #include "OnlineIdentityUEtopia.h"
 #include "OnlineFriendsUEtopia.h"
+#include "OnlineChatUEtopia.h"
 #include "OnlinePartyUEtopia.h"
 #include "VoiceInterfaceImpl.h"
 #include "SIOLambdaRunnableUEtopia.h"
@@ -116,7 +117,7 @@ IOnlinePresencePtr FOnlineSubsystemUEtopia::GetPresenceInterface() const
 
 IOnlineChatPtr FOnlineSubsystemUEtopia::GetChatInterface() const
 {
-	return nullptr;
+	return UEtopiaChat;
 }
 
 IOnlineTurnBasedPtr FOnlineSubsystemUEtopia::GetTurnBasedInterface() const
@@ -225,6 +226,7 @@ bool FOnlineSubsystemUEtopia::Init()
 		VoiceInterface = MakeShareable(new FOnlineVoiceImpl(this));
 		UEtopiaFriends = MakeShareable(new FOnlineFriendsUEtopia(this));
 		UEtopiaParty = MakeShareable(new FOnlinePartyUEtopia(this));
+		UEtopiaChat = MakeShareable(new FOnlineChatUEtopia(this));
 		if (!VoiceInterface->Init())
 		{
 			VoiceInterface = nullptr;
@@ -407,10 +409,118 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 		}));
 
 
-		// bind to chat_message
+		// bind to chat_message - this was just a test function.  TODO deprecate
 		OnNativeEvent(FString("chat_message"), [](const FString& Event, const TSharedPtr<FJsonValue>& Message)
 		{
 			UE_LOG_ONLINE(Display, TEXT("chat_message incoming"));
+		}, FString("/"));
+
+		// listen for incoming chat channel change notification
+		OnNativeEvent(FString("chat_rooms_changed_incoming"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("chat_rooms_changed_incoming "));
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString senderUserKeyId = "";
+
+			FString textMessage = "";
+
+
+			JsonResponse.TryGetStringField("userKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("textMessage", textMessage);
+
+			FChatRoomId chatRoomId = "SYSTEM";
+
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming senderUserKeyId: %s"), *senderUserKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming textMessage: %s"), *textMessage);
+
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+
+			// Trigger the delegate to cause the UI to update
+			this->GetChatInterface()->TriggerOnChatRoomListChangedDelegates(*SenderUserIdPtr, textMessage);
+
+		}, FString("/"));
+
+		// listen for incoming personal chats
+		OnNativeEvent(FString("chat_message_incoming"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("chat_message_incoming "));
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString senderUserKeyId = "";
+			FString senderUserTitle = "";
+			FString textMessage = "";
+			FString created = "";
+
+			JsonResponse.TryGetStringField("userKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("userTitle", senderUserTitle);
+			JsonResponse.TryGetStringField("textMessage", textMessage);
+			JsonResponse.TryGetStringField("created", created);
+
+			FChatRoomId chatRoomId = "SYSTEM";
+
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming senderUserKeyId: %s"), *senderUserKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming senderUserTitle: %s"), *senderUserTitle);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming textMessage: %s"), *textMessage);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming created: %s"), *created);
+
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+
+			FDateTime messageTimestamp;
+			FDateTime::ParseIso8601(*created, messageTimestamp);
+
+			// Build out the chat message
+
+			//FChatMessageUEtopia ChatMessage = FChatMessageUEtopia(senderUserTitle, textMessage, SenderUserIdPtr, messageTimestamp);
+			const TSharedRef<FChatMessageUEtopia> ChatMessage = MakeShareable(new FChatMessageUEtopia(senderUserTitle, textMessage, SenderUserIdPtr, messageTimestamp));
+			// Trigger the delegate to cause the UI to update
+			this->GetChatInterface()->TriggerOnChatPrivateMessageReceivedDelegates(*SenderUserIdPtr, ChatMessage);
+
+		}, FString("/"));
+
+
+		// listen for incoming room chat messages
+		OnNativeEvent(FString("chat_room_message_incoming"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("chat_room_message_incoming "));
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+
+			auto JsonResponse = *USIOJConvert::ToJsonObject(*USIOJConvert::ToJsonString(Message));
+			FString senderUserKeyId = "";
+			FString senderUserTitle = "";
+			FString chatRoomKeyId = "";
+			FString textMessage = "";
+			FString created = "";
+			
+
+			JsonResponse.TryGetStringField("userKeyId", senderUserKeyId);
+			JsonResponse.TryGetStringField("userTitle", senderUserTitle);
+			JsonResponse.TryGetStringField("chatChannelKeyId", chatRoomKeyId);
+			JsonResponse.TryGetStringField("textMessage", textMessage);
+			JsonResponse.TryGetStringField("created", created);
+
+			FChatRoomId chatRoomId = chatRoomKeyId;
+
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming senderUserKeyId: %s"), *senderUserKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming senderUserTitle: %s"), *senderUserTitle);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming chatRoomKeyId: %s"), *chatRoomKeyId);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming textMessage: %s"), *textMessage);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming created: %s"), *created);
+
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+
+			FDateTime messageTimestamp;
+			FDateTime::ParseIso8601(*created, messageTimestamp);
+
+			// Build out the chat message
+			
+			//FChatMessageUEtopia ChatMessage = FChatMessageUEtopia(senderUserTitle, textMessage, SenderUserIdPtr, messageTimestamp);
+			const TSharedRef<FChatMessageUEtopia> ChatMessage = MakeShareable(new FChatMessageUEtopia(senderUserTitle, textMessage, SenderUserIdPtr, messageTimestamp));
+			// Trigger the delegate to cause the UI to update
+			this->GetChatInterface()->TriggerOnChatRoomMessageReceivedDelegates(*SenderUserIdPtr, chatRoomId, ChatMessage);
+
 		}, FString("/"));
 
 		OnNativeEvent(FString("authenticate_success"), [](const FString& Event, const TSharedPtr<FJsonValue>& Message)
@@ -787,6 +897,8 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 	// Tell the Party Controller to load joined parties
 	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
+	// Get the Chat Channels
+	bool lookedUpChatChannels = UEtopiaChat->ReadJoinedRooms(0);
 #endif
 }
 
