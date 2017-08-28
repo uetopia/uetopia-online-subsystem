@@ -28,6 +28,9 @@ public:
 	virtual FString GetAccessToken() const override { return AuthTicket; }
 	virtual bool GetAuthAttribute(const FString& AttrName, FString& OutAttrValue) const override;
 
+	// This is not part of the OSS, but we have to be able to set Access tokens, because they need to be refreshed.
+	bool SetAccessToken(FString& InAceessToken);
+
 	// FUserOnlineAccountUEtopia
 	/*
 	FUserOnlineAccountUEtopia(const FString& InUserId=TEXT(""))
@@ -116,6 +119,18 @@ class FOnlineIdentityUEtopia : public IOnlineIdentity
 	/** index of local user being registered */
 	int32 LocalUserNumPendingLogin;
 
+	/** True if the user is logged in */
+	bool bIsLoggedIn;
+
+	// Refresh Token Timer 
+	/** The amount of elapsed time since the last check */
+	float RefreshTokenLastCheckElapsedTime;
+	/** Used to determine if we've timed out waiting for the response */
+	float RefreshTokenTotalCheckElapsedTime;
+	/** Config value used to set our timeout period - set in constructor*/
+	float RefreshTokenMaxCheckElapsedTime;
+
+
 public:
 
 
@@ -137,6 +152,9 @@ public:
 	virtual void GetUserPrivilege(const FUniqueNetId& UserId, EUserPrivileges::Type Privilege, const FOnGetUserPrivilegeCompleteDelegate& Delegate) override;
 	virtual FPlatformUserId GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& UniqueNetId) override;
 	virtual FString GetAuthType() const override; // 4.11
+
+	// Not part of the oss, but we use it internally
+	TSharedPtr<FUserOnlineAccountUEtopia> GetUEtopiaUserAccount(const FUniqueNetId& UserId) const;
 
 	// FOnlineIdentityUEtopia
 
@@ -176,6 +194,13 @@ private:
 	void TickLogin(float DeltaTime);
 
 	/**
+	* Ticks the registration process handling timeouts, etc.
+	*
+	* @param DeltaTime the amount of time that has elapsed since last tick
+	*/
+	void TickRefreshToken(float DeltaTime);
+
+	/**
 	 * Should use the initialization constructor instead
 	 */
 	//FOnlineIdentityUEtopia();
@@ -195,9 +220,19 @@ private:
 	bool ParseLoginResults(const FString& Results, FUserOnlineAccountUEtopia& Account);
 
 	/**
-	* Delegate called when a user /me request from facebook is complete
+	* Delegate called when a user /me request is complete
 	*/
 	void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	/**
+	* Request a Token Refresh from the backend
+	*/
+	bool RequestTokenRefresh();
+
+	/**
+	* Delegate called when a token refresh request is complete
+	*/
+	void TokenRefresh_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
 	/** Info used to send request to register a user */
 	struct FPendingLoginUser

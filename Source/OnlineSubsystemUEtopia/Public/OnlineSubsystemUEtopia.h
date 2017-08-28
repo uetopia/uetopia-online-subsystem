@@ -65,6 +65,7 @@ typedef TSharedPtr<class FOnlineVoiceImpl, ESPMode::ThreadSafe> FOnlineVoiceImpl
 typedef TSharedPtr<class FOnlineExternalUIUEtopia, ESPMode::ThreadSafe> FOnlineExternalUIUEtopiaPtr;
 typedef TSharedPtr<class FOnlineIdentityUEtopia, ESPMode::ThreadSafe> FOnlineIdentityUEtopiaPtr;
 typedef TSharedPtr<class FOnlineAchievementsUEtopia, ESPMode::ThreadSafe> FOnlineAchievementsUEtopiaPtr;
+typedef TSharedPtr<class FOnlineTournamentSystemUEtopia, ESPMode::ThreadSafe> FOnlineTouramentsUEtopiaPtr;
 //typedef TSharedPtr<class FOnlineNotificationHandler, ESPMode::ThreadSafe> FOnlineNotificationHandlerPtr;
 typedef TSharedPtr<class FOnlineNotificationTransportManager, ESPMode::ThreadSafe> FOnlineNotificationTransportManagerPtr;
 
@@ -107,6 +108,8 @@ public:
 	virtual IOnlinePresencePtr GetPresenceInterface() const override;
 	virtual IOnlineChatPtr GetChatInterface() const override;
     virtual IOnlineTurnBasedPtr GetTurnBasedInterface() const override;
+
+	virtual IOnlineTournamentPtr GetTournamentInterface() const override;
 
 	/**
 	* Get the notification handler instance for this subsystem
@@ -170,9 +173,9 @@ public:
 
 #if !UE_SERVER
 
-	/** Event received on socket.io connection established. */
+	/** Run post auth processes */
 	//UPROPERTY( Category = "SocketIO Events")
-	void OnConnected(sio::event &);
+	void OnAuthenticated();
 
 
 	
@@ -393,6 +396,9 @@ private:
 	FOnlineNotificationHandlerPtr OnlineNotificationHandler;
 	FOnlineNotificationTransportManagerPtr OnlineNotificationTransportManager;
 
+	// TOURNAMENTS
+	FOnlineTouramentsUEtopiaPtr UEtopiaTournaments;
+
 	/** Online async task runnable */
 	class FOnlineAsyncTaskManagerUEtopia* OnlineAsyncTaskThreadRunnable;
 
@@ -400,6 +406,12 @@ private:
 	class FRunnableThread* OnlineAsyncTaskThread;
 
 	FString _configPath = "";
+
+	// This is called after login is completed, and signals the backend to do any additional processing
+	// Like, rejoin a match in progress.
+	bool PostLoginBackendProcess();
+	/* http complete */
+	void PostLoginBackendProcess_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
 protected:
 #if !UE_SERVER

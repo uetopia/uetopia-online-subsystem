@@ -43,6 +43,10 @@ class FChatRoomMemberUEtopia :
 	public FChatRoomMember
 {
 public:
+
+	// need a constructor to set consts 
+	FChatRoomMemberUEtopia(const TSharedRef<const FUniqueNetId>& pid, const FString& playernickname);
+
 	virtual ~FChatRoomMemberUEtopia() {}
 
 	virtual const TSharedRef<const FUniqueNetId>& GetUserId() const override;
@@ -151,4 +155,5 @@ private:
 	void JoinPublicRoom_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 	void SendRoomChat_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 	void ExitRoom_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+	void SendPrivateChat_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 };

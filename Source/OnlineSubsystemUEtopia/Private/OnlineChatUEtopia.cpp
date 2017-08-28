@@ -57,6 +57,13 @@ FString FChatRoomInfoUEtopia::ToDebugString() const
 
 //FChatRoomMemberUEtopia
 
+FChatRoomMemberUEtopia::FChatRoomMemberUEtopia(const TSharedRef<const FUniqueNetId>& pid, const FString& playernickname)
+	: pid(pid),
+	playernickname(playernickname)
+{
+	UE_LOG(LogOnline, Log, TEXT("\t\t FChatRoomInfoUEtopia::FChatRoomMemberUEtopia ") );
+}
+
 const TSharedRef<const FUniqueNetId>& FChatRoomMemberUEtopia::GetUserId() const
 {
 	return pid;
@@ -332,7 +339,48 @@ bool FOnlineChatUEtopia::SendRoomChat(const FUniqueNetId& UserId, const FChatRoo
 
 bool FOnlineChatUEtopia::SendPrivateChat(const FUniqueNetId& UserId, const FUniqueNetId& RecipientId, const FString& MsgBody)
 {
-	return false;
+	UE_LOG(LogOnline, Verbose, TEXT("FOnlineChatUEtopia::SendRoomChat()"));
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("CreateRoom request failed. %s"), *ErrorStr);
+		return false;
+	}
+
+
+	// kick off http request
+	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::SendRoomChat_HttpRequestComplete);
+	FString ChatMessageCreateUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/messageCreate");
+
+	FString GameKey = UEtopiaSubsystem->GetGameKey();
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("GameKeyId", GameKey);
+	RequestJsonObj->SetStringField("userKeyId", RecipientId.ToString());
+	RequestJsonObj->SetStringField("text", MsgBody);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+
+	//FString OutputString = "GameKeyId=" + GameKey;
+	HttpRequest->SetURL(ChatMessageCreateUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
 }
 
 bool FOnlineChatUEtopia::IsChatAllowed(const FUniqueNetId& UserId, const FUniqueNetId& RecipientId) const
@@ -736,6 +784,54 @@ void FOnlineChatUEtopia::ExitRoom_HttpRequestComplete(FHttpRequestPtr HttpReques
 	if (!ErrorStr.IsEmpty())
 	{
 		UE_LOG(LogOnline, Warning, TEXT("ExitRoom_HttpRequestComplete request failed. %s"), *ErrorStr);
+	}
+
+	// TODO delegates
+	//TriggerOnChatRoomJoinPublicDelegates()
+}
+
+
+
+void FOnlineChatUEtopia::SendPrivateChat_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG(LogOnline, Verbose, TEXT("FOnlineChatUEtopia::SendPrivateChat_HttpRequestComplete()"));
+
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			//UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
+			//	*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+
+				bResult = true;
+			}
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("SendPrivateChat_HttpRequestComplete request failed. %s"), *ErrorStr);
 	}
 
 	// TODO delegates

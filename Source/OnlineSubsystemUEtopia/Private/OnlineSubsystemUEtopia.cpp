@@ -11,6 +11,7 @@
 #include "OnlineFriendsUEtopia.h"
 #include "OnlineChatUEtopia.h"
 #include "OnlinePartyUEtopia.h"
+#include "OnlineTournamentsUEtopia.h"
 #include "VoiceInterfaceImpl.h"
 #include "SIOLambdaRunnableUEtopia.h"
 #include "OnlineAchievementsInterfaceUEtopia.h"
@@ -125,6 +126,11 @@ IOnlineTurnBasedPtr FOnlineSubsystemUEtopia::GetTurnBasedInterface() const
 	return nullptr;
 }
 
+IOnlineTournamentPtr FOnlineSubsystemUEtopia::GetTournamentInterface() const
+{
+	return UEtopiaTournaments;
+}
+
 bool FOnlineSubsystemUEtopia::Tick(float DeltaTime)
 {
 	if (!FOnlineSubsystemImpl::Tick(DeltaTime))
@@ -227,6 +233,7 @@ bool FOnlineSubsystemUEtopia::Init()
 		UEtopiaFriends = MakeShareable(new FOnlineFriendsUEtopia(this));
 		UEtopiaParty = MakeShareable(new FOnlinePartyUEtopia(this));
 		UEtopiaChat = MakeShareable(new FOnlineChatUEtopia(this));
+		UEtopiaTournaments = MakeShareable(new FOnlineTournamentSystemUEtopia(this));
 		if (!VoiceInterface->Init())
 		{
 			VoiceInterface = nullptr;
@@ -350,11 +357,11 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 		//Attach the specific connection status events events
 
-		PrivateClient->set_open_listener(sio::client::con_listener([&]() {
+		//PrivateClient->set_open_listener(sio::client::con_listener([&]() {
 			//too early to get session id here so we defer the connection event until we connect to a namespace
-			UE_LOG(LogTemp, Log, TEXT("SocketIO set_open_listener"));
-			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect set_open_listener"));
-		}));
+		//	UE_LOG(LogTemp, Log, TEXT("SocketIO set_open_listener"));
+		//	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect set_open_listener"));
+		//}));
 
 		
 
@@ -383,11 +390,29 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 				UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect Connected with session: %s"), *SessionId);
 				//bool success;
 				//success = OnConnected();
+
+				
+
 			}
 
 			FString Namespace = USIOMessageConvertUEtopia::FStringFromStd(nsp);
 			UE_LOG(LogTemp, Log, TEXT("SocketIO connected to namespace: %s"), *Namespace);
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect connected to namespace: %s"), *Namespace);
+
+			// authenticate with the socket server
+			FString authString = IdentityInterface->GetAuthToken(0);
+			UE_LOG(LogTemp, Log, TEXT("authString: %s"), *authString);
+
+			// Pass the gameKey in the authenticate request as well
+			TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+			RequestJsonObj->SetStringField("GameKeyId", GameKey);
+			RequestJsonObj->SetStringField("authString", authString);
+
+			FString JsonOutputString;
+			TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+			FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+			EmitNative(FString("authenticate"), JsonOutputString);
 
 			//OnSocketNamespaceConnected.Broadcast(Namespace);
 		}));
@@ -523,10 +548,10 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 		}, FString("/"));
 
-		OnNativeEvent(FString("authenticate_success"), [](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		OnNativeEvent(FString("authenticate_success"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
 		{
 			UE_LOG_ONLINE(Display, TEXT("authenticate_success incoming"));
-			
+			this->OnAuthenticated();
 
 		}, FString("/"));
 
@@ -577,6 +602,8 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			// THERE IS NO FUNCTION FOR UPDATE FRIEND IN THE OSS!  WTF.
 			// TODO, can we cast to our class and implement it ourselves?
 			// Meanwhile, just signal a reload.
+
+			// TODO fix this.  It can cause an exception in some cases
 			this->GetFriendsInterface()->DeleteFriendsList(0, "default");
 			this->GetFriendsInterface()->ReadFriendsList(0, "default");
 
@@ -871,6 +898,23 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 		}, FString("/"));
 
+		// listen for incoming tournament changes
+		OnNativeEvent(FString("tournament_list_changed"), [this](const FString& Event, const TSharedPtr<FJsonValue>& Message)
+		{
+			UE_LOG_ONLINE(Display, TEXT("tournament_list_changed incoming"));
+			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
+			// Tell the tournaments interface to reload the tournament list
+
+			this->GetTournamentInterface()->FetchJoinableTournaments();
+
+			//this->GetFriendsInterface()->DeleteFriendsList(0, "default");
+			//this->GetFriendsInterface()->ReadFriendsList(0, "default");
+
+			// Trigger the delegate to cause the UI to update
+			//this->GetFriendsInterface()->TriggerOnFriendsChangeDelegates(0);
+
+		}, FString("/"));
+
 		std::map<std::string, std::string> QueryMap = {};
 		std::map<std::string, std::string> HeadersMap = {};
 
@@ -888,25 +932,34 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 		UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect PrivateClient->connect"));
 		PrivateClient->connect(StdAddressString, QueryMap, HeadersMap);
 
-		// authenticate with the socket server
-		FString authString = IdentityInterface->GetAuthToken(0);
-		UE_LOG(LogTemp, Log, TEXT("authString: %s"), *authString);
-		EmitNative(FString("authenticate"), authString);
-		EmitNative(FString("chat_message"), FString("testing"));
+		
+		// just a teat. todo deprecate
+		//EmitNative(FString("chat_message"), FString("testing"));
 	});
 
-	// Tell the Party Controller to load joined parties
-	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
-	// Get the Chat Channels
-	bool lookedUpChatChannels = UEtopiaChat->ReadJoinedRooms(0);
+	
 #endif
 }
 
 
 #if !UE_SERVER
-void FOnlineSubsystemUEtopia::OnConnected(sio::event &)
+void FOnlineSubsystemUEtopia::OnAuthenticated()
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect OnConnected()"));
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect OnAuthenticated()"));
+
+	// Run post login checks processing and fetch initial data 
+	bool postLoginProccessed = PostLoginBackendProcess();
+
+	bool lookedUpFriends = UEtopiaFriends->ReadFriendsList(0, "default");
+	TSharedPtr <const FUniqueNetId> pid = IdentityInterface->GetUniquePlayerId(0);
+	bool lookedUpRecentPlayers = UEtopiaFriends->QueryRecentPlayers(*pid, "default");
+
+	// Tell the Party Controller to load joined parties
+	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
+	// Get the Chat Channels
+	bool lookedUpChatChannels = UEtopiaChat->ReadJoinedRooms(0);
+	bool lookedUpTournaments = UEtopiaTournaments->FetchJoinableTournaments();
+
 	return;
 }
 
@@ -1016,3 +1069,49 @@ void FOnlineSubsystemUEtopia::OnRawEvent(const FString& EventName, TFunction< vo
 	}));
 }
 #endif
+
+bool FOnlineSubsystemUEtopia::PostLoginBackendProcess() 
+{
+	UE_LOG_ONLINE(Display, TEXT("PostLoginBackendProcess"));
+
+	FString AccessToken = IdentityInterface->GetAuthToken(0);
+
+	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	FString GameKey = GetGameKey();
+	FString APIURL = GetAPIURL();
+	FString SessionQueryUrl = "https://ue4topia.appspot.com/_ah/api/users/v1/postLoginProcess" ;
+
+	if (IsRunningDedicatedServer())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSubsystemUEtopia::PostLoginBackendProcess RUNNING ON DEDICATED SERVER!"));
+	}
+
+
+
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineSubsystemUEtopia::PostLoginBackendProcess_HttpRequestComplete);
+
+	// Set up the request 
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	HttpRequest->SetURL(SessionQueryUrl);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader("Content-Type", "application/x-www-form-urlencoded");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	bool requestSuccess = HttpRequest->ProcessRequest();
+
+	//FPendingSessionQuery
+	return requestSuccess;
+}
+
+void FOnlineSubsystemUEtopia::PostLoginBackendProcess_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSubsystemUEtopia::PostLoginBackendProcess_HttpRequestComplete"));
+}
