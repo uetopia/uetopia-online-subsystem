@@ -11,9 +11,6 @@
 #include "OnlineSubsystemUEtopiaPackage.h"
 #include "LANBeacon.h"
 
-
-
-
 /**
  * Interface definition for the online services session services
  * Session services are defined as anything related managing a session
@@ -40,8 +37,6 @@ private:
 	* Delegate called when a user /me request from uetopia is complete
 	*/
 	void FindOnlineSession_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-
-	
 
 	/* Matchmaker Start endpoint http complete */
 	void StartMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
@@ -269,7 +264,6 @@ public:
 	virtual ~FOnlineSessionUEtopia() {}
 	//FOnlineSessionUEtopia();
 
-	
 	FNamedOnlineSession* GetNamedSession(FName SessionName) override
 	{
 		FScopeLock ScopeLock(&SessionLock);
@@ -334,9 +328,6 @@ public:
 	//virtual bool DestroySession(FName SessionName) override; // 4.10
 	virtual bool IsPlayerInSession(FName SessionName, const FUniqueNetId& UniqueId) override;
 	virtual bool StartMatchmaking(const TArray< TSharedRef<const FUniqueNetId> >& LocalPlayers, FName SessionName, const FOnlineSessionSettings& NewSessionSettings, TSharedRef<FOnlineSessionSearch>& SearchSettings) override;
-	// ADDED BY UETOPIA
-	virtual bool OnMatchmakingStartedComplete(FName matchType, bool success) override;
-	//
 	virtual bool CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName) override;
 	virtual bool CancelMatchmaking(const FUniqueNetId& SearchingPlayerId, FName SessionName) override;
 	virtual bool FindSessions(int32 SearchingPlayerNum, const TSharedRef<FOnlineSessionSearch>& SearchSettings) override;
@@ -348,11 +339,12 @@ public:
 	virtual bool JoinSession(const FUniqueNetId& PlayerId, FName SessionName, const FOnlineSessionSearchResult& DesiredSession) override;
 	virtual bool FindFriendSession(int32 LocalUserNum, const FUniqueNetId& Friend) override;
 	virtual bool FindFriendSession(const FUniqueNetId& LocalUserId, const FUniqueNetId& Friend) override;
+	virtual bool FindFriendSession(const FUniqueNetId& LocalUserId, const TArray<TSharedRef<const FUniqueNetId>>& FriendList) override;
 	virtual bool SendSessionInviteToFriend(int32 LocalUserNum, FName SessionName, const FUniqueNetId& Friend) override;
 	virtual bool SendSessionInviteToFriend(const FUniqueNetId& LocalUserId, FName SessionName, const FUniqueNetId& Friend) override;
 	virtual bool SendSessionInviteToFriends(int32 LocalUserNum, FName SessionName, const TArray< TSharedRef<const FUniqueNetId> >& Friends) override;
 	virtual bool SendSessionInviteToFriends(const FUniqueNetId& LocalUserId, FName SessionName, const TArray< TSharedRef<const FUniqueNetId> >& Friends) override;
-	virtual bool GetResolvedConnectString(FName SessionName, FString& ConnectInfo) override;
+	virtual bool GetResolvedConnectString(FName SessionName, FString& ConnectInfo, FName PortType) override;
 	virtual bool GetResolvedConnectString(const class FOnlineSessionSearchResult& SearchResult, FName PortType, FString& ConnectInfo) override;
 	virtual FOnlineSessionSettings* GetSessionSettings(FName SessionName) override;
 	virtual bool RegisterPlayer(FName SessionName, const FUniqueNetId& PlayerId, bool bWasInvited) override;

@@ -6,13 +6,11 @@
 #include "SIOJsonObject.h"
 #include "SIOJsonValue.h"
 #include "SIOJConvert.h"
-#include "OnlineNotificationHandler.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemImpl.h"
 #include "OnlineSubsystemUEtopiaPackage.h"
 
-//class FOnlineNotificationHandler;
-class FOnlineNotificationTransportManager;
+
 
 //Socket IO stuff
 
@@ -56,8 +54,8 @@ enum ESIOConnectionCloseReason
 /** Forward declarations of all interface classes */
 typedef TSharedPtr<class FOnlineSessionUEtopia, ESPMode::ThreadSafe> FOnlineSessionUEtopiaPtr;
 typedef TSharedPtr<class FOnlineProfileUEtopia, ESPMode::ThreadSafe> FOnlineProfileUEtopiaPtr;
-typedef TSharedPtr<class FOnlineChatUEtopia, ESPMode::ThreadSafe> FOnlineChatUEtopiaPtr;
 typedef TSharedPtr<class FOnlineFriendsUEtopia, ESPMode::ThreadSafe> FOnlineFriendsUEtopiaPtr;
+typedef TSharedPtr<class FOnlineSharingUEtopia, ESPMode::ThreadSafe> FOnlineSharingUEtopiaPtr;
 typedef TSharedPtr<class FOnlinePartyUEtopia, ESPMode::ThreadSafe> FOnlinePartyUEtopiaPtr;
 typedef TSharedPtr<class FOnlineUserCloudUEtopia, ESPMode::ThreadSafe> FOnlineUserCloudUEtopiaPtr;
 typedef TSharedPtr<class FOnlineLeaderboardsUEtopia, ESPMode::ThreadSafe> FOnlineLeaderboardsUEtopiaPtr;
@@ -65,9 +63,8 @@ typedef TSharedPtr<class FOnlineVoiceImpl, ESPMode::ThreadSafe> FOnlineVoiceImpl
 typedef TSharedPtr<class FOnlineExternalUIUEtopia, ESPMode::ThreadSafe> FOnlineExternalUIUEtopiaPtr;
 typedef TSharedPtr<class FOnlineIdentityUEtopia, ESPMode::ThreadSafe> FOnlineIdentityUEtopiaPtr;
 typedef TSharedPtr<class FOnlineAchievementsUEtopia, ESPMode::ThreadSafe> FOnlineAchievementsUEtopiaPtr;
-typedef TSharedPtr<class FOnlineTournamentSystemUEtopia, ESPMode::ThreadSafe> FOnlineTouramentsUEtopiaPtr;
-//typedef TSharedPtr<class FOnlineNotificationHandler, ESPMode::ThreadSafe> FOnlineNotificationHandlerPtr;
-typedef TSharedPtr<class FOnlineNotificationTransportManager, ESPMode::ThreadSafe> FOnlineNotificationTransportManagerPtr;
+typedef TSharedPtr<class FOnlineExternalUIUEtopiaCommon, ESPMode::ThreadSafe> FOnlineExternalUIInterfaceUEtopiaPtr;
+//typedef TSharedPtr<class FOnlineUserUEtopiaCommon, ESPMode::ThreadSafe> FOnlineUserUEtopiaCommonPtr;
 
 /**
  *	OnlineSubsystemUEtopia - Implementation of the online subsystem for UEtopia services
@@ -109,17 +106,6 @@ public:
 	virtual IOnlineChatPtr GetChatInterface() const override;
     virtual IOnlineTurnBasedPtr GetTurnBasedInterface() const override;
 
-	virtual IOnlineTournamentPtr GetTournamentInterface() const override;
-
-	/**
-	* Get the notification handler instance for this subsystem
-	* @return Pointer for the appropriate notification handler
-	*/
-	FOnlineNotificationHandlerPtr GetOnlineNotificationHandler() const
-	{
-		return OnlineNotificationHandler;
-	}
-
 	virtual bool Init() override;
 	virtual bool Shutdown() override;
 	virtual FString GetAppId() const override;
@@ -132,9 +118,6 @@ public:
 
 	virtual bool Tick(float DeltaTime) override;
 
-	// Handle incoming Matchmaker Started notifications
-	bool OnMatchmakingStartedComplete(FString matchType, bool success);
-
 	// FOnlineSubsystemUEtopia
 
 	/**
@@ -146,6 +129,9 @@ public:
 	// SocketIO stuff
 	//Async events
 
+	/** Event received on socket.io connection established. */
+	//UPROPERTY( Category = "SocketIO Events")
+		void OnConnected(sio::event &);
 
 	/** Default connection address string in form e.g. http://localhost:80. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketIO Properties")
@@ -171,15 +157,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
 		void Connect(const FString& InAddressAndPort, USIOJsonObject* Query = nullptr, USIOJsonObject* Headers = nullptr);
 
-#if !UE_SERVER
-
-	/** Run post auth processes */
-	//UPROPERTY( Category = "SocketIO Events")
-	void OnAuthenticated();
-
-
-	
-
 	/**
 	* Emit a raw sio::message event
 	*
@@ -200,8 +177,8 @@ public:
 	* @param Message	SIOJJsonValue
 	* @param Namespace	Namespace within socket.io
 	*/
-	//UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
-	void Emit(const FString& EventName, USIOJsonValue* Message = nullptr, const FString& Namespace = FString(TEXT("/")));
+	UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
+		void Emit(const FString& EventName, USIOJsonValue* Message = nullptr, const FString& Namespace = FString(TEXT("/")));
 
 
 	/**
@@ -332,31 +309,26 @@ public:
 		TFunction< void(const FString&, const sio::message::ptr&)> CallbackFunction,
 		const FString& Namespace = FString(TEXT("/")));
 
-#endif
+
 
 PACKAGE_SCOPE:
 
 	/** Only the factory makes instances */
-	FOnlineSubsystemUEtopia(FName InInstanceName) :
-		FOnlineSubsystemImpl(InInstanceName),
-		SessionInterface(NULL),
-		VoiceInterface(NULL),
-		LeaderboardsInterface(NULL),
-		IdentityInterface(NULL),
-		AchievementsInterface(NULL),
-		OnlineAsyncTaskThreadRunnable(NULL),
-		OnlineAsyncTaskThread(NULL)
+	FOnlineSubsystemUEtopia(FName InInstanceName) 
 	{}
 
+	/*
 	FOnlineSubsystemUEtopia() :
-		SessionInterface(NULL),
-		VoiceInterface(NULL),
-		LeaderboardsInterface(NULL),
-		IdentityInterface(NULL),
-		AchievementsInterface(NULL),
-		OnlineAsyncTaskThreadRunnable(NULL),
-		OnlineAsyncTaskThread(NULL)
+	SessionInterface(NULL),
+	VoiceInterface(NULL),
+	LeaderboardsInterface(NULL),
+	IdentityInterface(NULL),
+	AchievementsInterface(NULL),
+	OnlineAsyncTaskThreadRunnable(NULL),
+	OnlineAsyncTaskThread(NULL)
 	{}
+	*/
+	
 
 private:
 
@@ -384,20 +356,22 @@ private:
 	/** Interface for achievements */
 	FOnlineAchievementsUEtopiaPtr AchievementsInterface;
 
-	/** implementation of chat interface */
-	FOnlineChatUEtopiaPtr UEtopiaChat;
-
 	/** implementation of friends interface */
 	FOnlineFriendsUEtopiaPtr UEtopiaFriends;
+
+	/** Facebook implementation of sharing interface */
+	FOnlineSharingUEtopiaPtr UEtopiaSharing;
 
 	/** implementation of party interface */
 	FOnlinePartyUEtopiaPtr UEtopiaParty;
 
-	FOnlineNotificationHandlerPtr OnlineNotificationHandler;
-	FOnlineNotificationTransportManagerPtr OnlineNotificationTransportManager;
+	/** UEtopia implementation of the external ui */
+	FOnlineExternalUIInterfaceUEtopiaPtr UEtopiaExternalUI;
 
-	// TOURNAMENTS
-	FOnlineTouramentsUEtopiaPtr UEtopiaTournaments;
+	/** Facebook implementation of user interface */
+	// This is apparently not used in the windows platform version?  
+	// It never gets initialized...  WHy is it there?
+	//FOnlineUserUEtopiaCommonPtr UEtopiaUser;
 
 	/** Online async task runnable */
 	class FOnlineAsyncTaskManagerUEtopia* OnlineAsyncTaskThreadRunnable;
@@ -407,17 +381,9 @@ private:
 
 	FString _configPath = "";
 
-	// This is called after login is completed, and signals the backend to do any additional processing
-	// Like, rejoin a match in progress.
-	bool PostLoginBackendProcess();
-	/* http complete */
-	void PostLoginBackendProcess_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-
 protected:
-#if !UE_SERVER
 	sio::client* PrivateClient;
 	class FSIOLambdaRunnableUEtopia* ConnectionThread;
-#endif
 };
 
 typedef TSharedPtr<FOnlineSubsystemUEtopia, ESPMode::ThreadSafe> FOnlineSubsystemUEtopiaPtr;

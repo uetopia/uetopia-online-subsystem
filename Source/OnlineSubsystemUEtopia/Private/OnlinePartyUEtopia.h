@@ -148,12 +148,20 @@ public:
 	virtual bool CreateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId PartyTypeId, const FPartyConfiguration& PartyConfig, const FOnCreatePartyComplete& Delegate = FOnCreatePartyComplete()) override;
 	virtual bool UpdateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyConfiguration& PartyConfig, bool bShouldRegenerateReservationKey = false, const FOnUpdatePartyComplete& Delegate = FOnUpdatePartyComplete()) override;
 	virtual bool JoinParty(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnJoinPartyComplete& Delegate = FOnJoinPartyComplete()) override;
+	virtual void QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityComplete& Delegate = FOnQueryPartyJoinabilityComplete()) override;
+	virtual bool RejoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyTypeId& PartyTypeId, const TArray<TSharedRef<const FUniqueNetId>>& FormerMembers, const FOnJoinPartyComplete& Delegate = FOnJoinPartyComplete()) override;
+
 	virtual bool LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnLeavePartyComplete& Delegate = FOnLeavePartyComplete()) override;
 	virtual bool ApproveJoinRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode = 0) override;
+	virtual void RespondToQueryJoinability(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bCanJoin, int32 DeniedResultCode = 0) override;
 	virtual bool SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData = FOnlinePartyData(), const FOnSendPartyInvitationComplete& Delegate = FOnSendPartyInvitationComplete()) override;
 	virtual bool AcceptInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId) override;
 	virtual bool RejectInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId) override;
 	virtual void ClearInvitations(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId, const FOnlinePartyId* PartyId = nullptr) override;
+	virtual void ApproveUserForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& ApprovedUserId) override;
+	virtual void RemoveUserForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RemovedUserId) override;
+	virtual void GetUsersApprovedForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<const FUniqueNetId>>& OutApprovedUserIds) override;
+
 	virtual bool KickMember(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& TargetMemberId, const FOnKickPartyMemberComplete& Delegate = FOnKickPartyMemberComplete()) override;
 	virtual bool PromoteMember(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& TargetMemberId, const FOnPromotePartyMemberComplete& Delegate = FOnPromotePartyMemberComplete()) override;
 	virtual bool UpdatePartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyData& PartyData) override;
@@ -182,27 +190,13 @@ public:
 	// This is not part of the OSS for some reason.  ???
 	bool FetchJoinedParties();
 
-	/** When a party invite arrives, we need to keep track of the party name, and the player name.  
-	// These Do not get sent along with the delegate...  Again...  Not sure why...
-	//  TODO research this and see if there is a better way to do it.
-	// For now, just storing them as strings here
-
-	// this is not going to work without breaking OSS compatability.
-	**/
-	//void SetLatestPartyInvitePartyTitle(FString LatestPartyInvitePartyTitleIncoming);
-	//void SetLatestPartyInviteSenderTitle(FString LatestPartyInviteSenderTitleIncoming);
-	//FString GetLatestPartyInvitePartyTitle();
-	//FString GetLatestPartyInviteSenderTitle();
-
-	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
-
 	/**
 	* List of all subscribe-able notifications
 	*
 	* OnPartyJoined
 	* OnPartyPromotionLockoutStateChanged
 	* OnPartyConfigChanged
-	* OnPartyDataReceived  // THIS IS WRONG IN THE SOURCE COMMENTS
+	* OnPartyDataChanged
 	* OnPartyMemberChanged
 	* OnPartyMemberExited
 	* OnPartyMemberJoined
@@ -222,11 +216,10 @@ private:
 
 	void CreateParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnCreatePartyComplete Delegate);
 	void SendInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendPartyInvitationComplete Delegate);
+
+	void JoinParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnJoinPartyComplete Delegate);
 	
 	void FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-	void RejectInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-
-	void LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnLeavePartyComplete Delegate);
 
 	/** List of joined parties */
 	struct FOnlineJoinedParties
@@ -235,12 +228,4 @@ private:
 	};
 
 	FOnlineJoinedParties OnlineJoinedParties;
-
-	
-
-	/** When a party invite arrives, we need to keep track of the party name, and the player name.
-	// These Do not get sent along with the delegate...  Again...  Not sure why,,,
-	**/
-	//FString LatestPartyInvitePartyTitle;
-	//FString LatestPartyInviteSenderTitle;
 };

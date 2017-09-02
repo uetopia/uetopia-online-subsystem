@@ -2,8 +2,10 @@
 
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "OnlineIdentityUEtopia.h"
+#include "OnlineExternalUIUEtopiaCommon.h"
 #include "IPAddress.h"
 #include "SocketSubsystem.h"
+//#include "LoginFlowManager.h"
 
 bool FUserOnlineAccountUEtopia::GetAuthAttribute(const FString& AttrName, FString& OutAttrValue) const
 {
@@ -25,12 +27,6 @@ bool FUserOnlineAccountUEtopia::GetUserAttribute(const FString& AttrName, FStrin
 		return true;
 	}
 	return false;
-}
-
-bool FUserOnlineAccountUEtopia::SetAccessToken(FString& InAceessToken)
-{
-	AuthTicket = InAceessToken;
-	return true;
 }
 
 bool FUserOnlineAccountUEtopia::SetUserAttribute(const FString& AttrName, const FString& AttrValue)
@@ -75,146 +71,14 @@ inline FString GenerateRandomUserId(int32 LocalUserNum)
 void FOnlineIdentityUEtopia::Tick(float DeltaTime)
 {
 	// Only tick once per frame
-	TickLogin(DeltaTime);
-	TickRefreshToken(DeltaTime);
+	//  As of 4.16 this does not exist anymore
+	//TickLogin(DeltaTime);
 }
 
-/**
-* Ticks the registration process handling timeouts, etc.
-*
-* @param DeltaTime the amount of time that has elapsed since last tick
-*/
-void FOnlineIdentityUEtopia::TickLogin(float DeltaTime)
-{
-
-	if (bHasLoginOutstanding)
-	{
-		UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin bHasLoginOutstanding"));
-		LastCheckElapsedTime += DeltaTime;
-		TotalCheckElapsedTime += DeltaTime;
-		// See if enough time has elapsed in order to check for completion
-		if (LastCheckElapsedTime > 1.f ||
-			// Do one last check if we're getting ready to time out
-			TotalCheckElapsedTime > MaxCheckElapsedTime)
-		{
-			LastCheckElapsedTime = 0.f;
-			FString Title;
-
-			// Find the browser window we spawned which should now be titled with the redirect url
-			if (FPlatformMisc::GetWindowTitleMatchingText(*LoginRedirectUrl, Title))
-			{
-				UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin GetWindowTitleMatchingText"));
-				bHasLoginOutstanding = false;
-
-				// Parse access token from the login redirect url
-				FString AccessToken;
-				if (FParse::Value(*Title, TEXT("access_token="), AccessToken) &&
-					!AccessToken.IsEmpty())
-				{
-					UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin Found access_token"));
-					// strip off any url parameters and just keep the token itself
-					FString AccessTokenOnly;
-					if (AccessToken.Split(TEXT("&"), &AccessTokenOnly, NULL))
-					{
-						AccessToken = AccessTokenOnly;
-					}
-					// kick off http request to get user info with the new token
-					TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-					LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNumPendingLogin, AccessToken));
-
-					FString MeUrl = TEXT("https://ue4topia.appspot.com/me?access_token=`token");
-
-					HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete);
-					HttpRequest->SetURL(MeUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase));
-					HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-					HttpRequest->SetVerb(TEXT("GET"));
-					HttpRequest->ProcessRequest();
-				}
-				else
-				{
-					TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
-						FString(TEXT("RegisterUser() failed to parse the user registration results")));
-				}
-			}
-			// Trigger the delegate if we hit the timeout limit
-			else if (TotalCheckElapsedTime > MaxCheckElapsedTime)
-			{
-				bHasLoginOutstanding = false;
-				TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
-					FString(TEXT("RegisterUser() timed out without getting the data")));
-			}
-		}
-		// Reset our time trackers if we are done ticking for now
-		if (!bHasLoginOutstanding)
-		{
-			LastCheckElapsedTime = 0.f;
-			TotalCheckElapsedTime = 0.f;
-		}
-	}
-}
-
-/**
-* Ticks the registration process handling timeouts, etc.
-*
-* @param DeltaTime the amount of time that has elapsed since last tick
-*/
-void FOnlineIdentityUEtopia::TickRefreshToken(float DeltaTime)
-{
-	//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken"));
-
-	if (bIsLoggedIn) 
-	{
-		//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken bIsLoggedIn"));
-		RefreshTokenLastCheckElapsedTime += DeltaTime;
-		RefreshTokenTotalCheckElapsedTime += DeltaTime;
-		// See if enough time has elapsed in order to check for completion
-		if (RefreshTokenTotalCheckElapsedTime > RefreshTokenMaxCheckElapsedTime)
-		{
-			//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : RefreshTokenTotalCheckElapsedTime > RefreshTokenMaxCheckElapsedTime"));
-			// space out requests to allow time for completion
-			if (RefreshTokenLastCheckElapsedTime > 10.0f)
-			{
-				UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : REFRESHING"));
-				RefreshTokenLastCheckElapsedTime = 0.f;
-
-				// kick off http request to get user info with the new token
-				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-
-				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete);
-				FString RefreshUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/users/v1/refreshToken");
-
-				//FString GameKey = UEtopiaSubsystem->GetGameKey();
-
-				//TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
-				//RequestJsonObj->SetStringField("GameKeyId", GameKey);
-
-				//FString JsonOutputString;
-				//TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
-				//FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
-
-
-				//FString OutputString = "GameKeyId=" + GameKey;
-				HttpRequest->SetURL(RefreshUrlHardcoded);
-				HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
-				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
-				HttpRequest->SetHeader(TEXT("x-uetopia-auth"), GetAuthToken(0));
-				//HttpRequest->SetContentAsString(JsonOutputString);
-				HttpRequest->SetVerb(TEXT("POST"));
-
-				bool requestsuccess = HttpRequest->ProcessRequest();
-
-
-			}
-			
-
-		}
-	}
-
-}
 
 bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCredentials& AccountCredentials)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login"));
+	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 01"));
 	FString ErrorStr;
 
 	if (bHasLoginOutstanding)
@@ -222,31 +86,76 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 		ErrorStr = FString::Printf(TEXT("Registration already pending for user %d"),
 			LocalUserNumPendingLogin);
 	}
-	else if (!(LoginUrl.Len() && LoginRedirectUrl.Len() && ClientId.Len()))
+	else if (!LoginURLDetails.IsValid())
 	{
-		ErrorStr = FString::Printf(TEXT("OnlineSubsystemUEtopia is improperly configured in DefaultEngine.ini UEtopiaEndpoint=%s RedirectUrl=%s ClientId=%s"),
-			*LoginUrl, *LoginRedirectUrl, *ClientId);
+		ErrorStr = FString::Printf(TEXT("OnlineSubsystemUEtopia is improperly configured in DefaultEngine.ini LoginURL=%s LoginRedirectUrl=%s ClientId=%s"),
+			*LoginURLDetails.LoginUrl, *LoginURLDetails.LoginRedirectUrl, *LoginURLDetails.ClientId);
 	}
 	else
 	{
+		// As of 4.16.x The facebook subsystem does this totally different.
+		// Likely this is to solve the windows 10 issue which fails to open the browser window for auth
+		// Keeping the old way commented out for now
+
+		/*
 		// random number to represent client generated state for verification on login
 		State = FString::FromInt(FMath::Rand() % 100000);
 		// auth url to spawn in browser
 		const FString& Command = FString::Printf(TEXT("%s?redirect_uri=%s&client_id=%s&state=%s&response_type=token"),
-			*LoginUrl, *LoginRedirectUrl, *ClientId, *State);
+		*LoginUrl, *LoginRedirectUrl, *ClientId, *State);
 		UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login - %s"), *LoginUrl);
 		// This should open the browser with the command as the URL
 		if (FPlatformMisc::OsExecute(TEXT("open"), *Command))
 		{
-			// keep track of local user requesting registration
-			LocalUserNumPendingLogin = LocalUserNum;
-			bHasLoginOutstanding = true;
+		// keep track of local user requesting registration
+		LocalUserNumPendingLogin = LocalUserNum;
+		bHasLoginOutstanding = true;
 		}
 		else
 		{
-			ErrorStr = FString::Printf(TEXT("Failed to execute command %s"),
-				*Command);
+		ErrorStr = FString::Printf(TEXT("Failed to execute command %s"),
+		*Command);
 		}
+		*/
+
+		// Trying to put the login flow stuff in here
+		// Unable to get includes working.  FFS
+		//ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
+		//LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
+
+
+		if (LocalUserNum < 0 || LocalUserNum >= MAX_LOCAL_PLAYERS)
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid LocalUserNum=%d"), LocalUserNum);
+		}
+		else
+		{
+			if (!AccountCredentials.Id.IsEmpty() && !AccountCredentials.Token.IsEmpty() && AccountCredentials.Type == GetAuthType())
+			{
+				bHasLoginOutstanding = true;
+
+				Login(LocalUserNum, AccountCredentials.Token, FOnLoginCompleteDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnAccessTokenLoginComplete));
+			}
+			else
+			{
+				IOnlineExternalUIPtr OnlineExternalUI = UEtopiaSubsystem->GetExternalUIInterface();
+				if (OnlineExternalUI.IsValid())
+				{
+					LoginURLDetails.GenerateNonce();
+
+					bHasLoginOutstanding = true;
+
+					FOnLoginUIClosedDelegate CompletionDelegate = FOnLoginUIClosedDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnExternalUILoginComplete);
+					OnlineExternalUI->ShowLoginUI(LocalUserNum, true, true, CompletionDelegate);
+				}
+				else
+				{
+					ErrorStr = FString::Printf(TEXT("External interface missing"));
+				}
+			}
+		}
+		
+
 	}
 
 	if (!ErrorStr.IsEmpty())
@@ -258,6 +167,151 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 	}
 	return true;
 }
+
+void FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FString& AccessToken, const FOnLoginCompleteDelegate& InCompletionDelegate)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 02"));
+	FOnProfileRequestComplete CompletionDelegate = FOnProfileRequestComplete::CreateLambda([this, InCompletionDelegate](int32 LocalUserNumFromRequest, bool bWasSuccessful, const FString& ErrorStr)
+	{
+		FOnRequestCurrentPermissionsComplete NextCompletionDelegate = FOnRequestCurrentPermissionsComplete::CreateLambda([this, InCompletionDelegate](int32 LocalUserNumFromPerms, bool bWasSuccessful, const TArray<FSharingPermission>& Permissions)
+		{
+			OnRequestCurrentPermissionsComplete(LocalUserNumFromPerms, bWasSuccessful, Permissions, InCompletionDelegate);
+		});
+
+		if (bWasSuccessful)
+		{
+			RequestCurrentPermissions(LocalUserNumFromRequest, NextCompletionDelegate);
+		}
+		else
+		{
+			InCompletionDelegate.ExecuteIfBound(LocalUserNumFromRequest, bWasSuccessful, GetEmptyUniqueId(), ErrorStr);
+		}
+	});
+
+	ProfileRequest(LocalUserNum, AccessToken, ProfileFields, CompletionDelegate);
+}
+
+
+void FOnlineIdentityUEtopia::OnRequestCurrentPermissionsComplete(int32 LocalUserNum, bool bWasSuccessful, const TArray<FSharingPermission>& NewPermissions, FOnLoginCompleteDelegate CompletionDelegate)
+{
+	FString ErrorStr;
+	if (!bWasSuccessful)
+	{
+		ErrorStr = TEXT("Failure to request current sharing permissions");
+	}
+
+	LoginURLDetails.ScopeFields.Empty(NewPermissions.Num());
+	for (const FSharingPermission& Perm : NewPermissions)
+	{
+		if (Perm.Status == EOnlineSharingPermissionState::Granted)
+		{
+			LoginURLDetails.ScopeFields.Add(Perm.Name);
+		}
+	}
+
+	LoginURLDetails.NewScopeFields.Empty();
+	LoginURLDetails.RerequestScopeFields.Empty();
+
+	CompletionDelegate.ExecuteIfBound(LocalUserNum, bWasSuccessful, *GetUniquePlayerId(LocalUserNum), ErrorStr);
+}
+
+
+void FOnlineIdentityUEtopia::OnExternalUILoginComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex)
+{
+	FString ErrorStr;
+	bool bWasSuccessful = UniqueId.IsValid() && UniqueId->IsValid();
+	OnAccessTokenLoginComplete(ControllerIndex, bWasSuccessful, bWasSuccessful ? *UniqueId : GetEmptyUniqueId(), ErrorStr);
+}
+
+void FOnlineIdentityUEtopia::RequestElevatedPermissions(int32 LocalUserNum, const TArray<FSharingPermission>& AddlPermissions, const FOnLoginCompleteDelegate& InCompletionDelegate)
+{
+	FString ErrorStr;
+
+	if (bHasLoginOutstanding)
+	{
+		ErrorStr = FString::Printf(TEXT("Registration already pending for user"));
+	}
+	else if (!LoginURLDetails.IsValid())
+	{
+		ErrorStr = FString::Printf(TEXT("OnlineSubsystemFacebook is improperly configured in DefaultEngine.ini LoginURL=%s LoginRedirectUrl=%s ClientId=%s"),
+			*LoginURLDetails.LoginUrl, *LoginURLDetails.LoginRedirectUrl, *LoginURLDetails.ClientId);
+	}
+	else
+	{
+		if (LocalUserNum < 0 || LocalUserNum >= MAX_LOCAL_PLAYERS)
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid LocalUserNum=%d"), LocalUserNum);
+		}
+		else
+		{
+			IOnlineExternalUIPtr OnlineExternalUI = UEtopiaSubsystem->GetExternalUIInterface();
+			if (OnlineExternalUI.IsValid())
+			{
+				LoginURLDetails.GenerateNonce();
+
+				TArray<FString> NewPerms;
+				TArray<FString> RerequestPerms;
+				for (const FSharingPermission& NewPermission : AddlPermissions)
+				{
+					if (!LoginURLDetails.ScopeFields.Contains(NewPermission.Name))
+					{
+						if (NewPermission.Status == EOnlineSharingPermissionState::Declined)
+						{
+							RerequestPerms.AddUnique(NewPermission.Name);
+						}
+						else
+						{
+							NewPerms.AddUnique(NewPermission.Name);
+						}
+					}
+				}
+
+				if (NewPerms.Num() > 0 || RerequestPerms.Num() > 0)
+				{
+					bHasLoginOutstanding = true;
+					LoginURLDetails.NewScopeFields = NewPerms;
+					LoginURLDetails.RerequestScopeFields = RerequestPerms;
+					FOnLoginUIClosedDelegate CompletionDelegate = FOnLoginUIClosedDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete, InCompletionDelegate);
+					OnlineExternalUI->ShowLoginUI(LocalUserNum, true, true, CompletionDelegate);
+				}
+				else
+				{
+					// Fire off delegate now because permissions already exist
+					TSharedPtr<const FUniqueNetId> UserId = GetUniquePlayerId(LocalUserNum);
+					InCompletionDelegate.ExecuteIfBound(LocalUserNum, true, *UserId, ErrorStr);
+				}
+			}
+			else
+			{
+				ErrorStr = FString::Printf(TEXT("External interface missing"));
+			}
+		}
+	}
+
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Error, TEXT("RequestElevatedPermissions() failed: %s"), *ErrorStr);
+		bHasLoginOutstanding = false;
+		InCompletionDelegate.ExecuteIfBound(LocalUserNum, false, GetEmptyUniqueId(), ErrorStr);
+	}
+}
+
+void FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, FOnLoginCompleteDelegate InCompletionDelegate)
+{
+	FString ErrorStr;
+	bool bWasSuccessful = UniqueId.IsValid() && UniqueId->IsValid();
+	bHasLoginOutstanding = false;
+
+	if (!bWasSuccessful)
+	{
+		ErrorStr = TEXT("com.epicgames.elevated_perms_failed");
+	}
+
+	UE_LOG(LogOnline, Verbose, TEXT("RequestElevatedPermissions() %s"), bWasSuccessful ? TEXT("success") : TEXT("failed"));
+	TSharedPtr<const FUniqueNetId> ExistingUserId = GetUniquePlayerId(ControllerIndex);
+	InCompletionDelegate.ExecuteIfBound(ControllerIndex, bWasSuccessful, ExistingUserId.IsValid() ? *ExistingUserId : GetEmptyUniqueId(), ErrorStr);
+}
+
 
 bool FOnlineIdentityUEtopia::Logout(int32 LocalUserNum)
 {
@@ -310,19 +364,6 @@ bool FOnlineIdentityUEtopia::ParseLoginResults(const FString& Results, FUserOnli
 TSharedPtr<FUserOnlineAccount> FOnlineIdentityUEtopia::GetUserAccount(const FUniqueNetId& UserId) const
 {
 	TSharedPtr<FUserOnlineAccount> Result;
-
-	const TSharedRef<FUserOnlineAccountUEtopia>* FoundUserAccount = UserAccounts.Find(UserId.ToString());
-	if (FoundUserAccount != NULL)
-	{
-		Result = *FoundUserAccount;
-	}
-
-	return Result;
-}
-
-TSharedPtr<FUserOnlineAccountUEtopia> FOnlineIdentityUEtopia::GetUEtopiaUserAccount(const FUniqueNetId& UserId) const
-{
-	TSharedPtr<FUserOnlineAccountUEtopia> Result;
 
 	const TSharedRef<FUserOnlineAccountUEtopia>* FoundUserAccount = UserAccounts.Find(UserId.ToString());
 	if (FoundUserAccount != NULL)
@@ -425,23 +466,24 @@ FString FOnlineIdentityUEtopia::GetAuthToken(int32 LocalUserNum) const
 /**
 * Sets the needed configuration properties
 */
-FOnlineIdentityUEtopia::FOnlineIdentityUEtopia()
-	: LastCheckElapsedTime(0.f)
+FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsystem)
+	: UEtopiaSubsystem(InSubsystem)
+	, LastCheckElapsedTime(0.f)
 	, TotalCheckElapsedTime(0.f)
 	, MaxCheckElapsedTime(0.f)
 	, bHasLoginOutstanding(false)
 	, LocalUserNumPendingLogin(0)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::FOnlineIdentityUEtopia"));
-	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginUrl"), LoginUrl, GEngineIni))
+	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginUrl"), LoginURLDetails.LoginUrl, GEngineIni))
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing LoginUrl= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
-	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginRedirectUrl"), LoginRedirectUrl, GEngineIni))
+	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginRedirectUrl"), LoginURLDetails.LoginRedirectUrl, GEngineIni))
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing LoginRedirectUrl= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
-	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("ClientId"), ClientId, GEngineIni))
+	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("ClientId"), LoginURLDetails.ClientId, GEngineIni))
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing ClientId= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
@@ -451,11 +493,11 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia()
 		// Default to 30 seconds
 		MaxCheckElapsedTime = 30.f;
 	}
+	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("MeURL"), MeURL, GEngineIni))
+	{
+		UE_LOG(LogOnline, Warning, TEXT("Missing MeURL= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
+	}
 	SocketExternalIpSet = false;
-	RefreshTokenLastCheckElapsedTime = 0.0f;
-	RefreshTokenTotalCheckElapsedTime = 0.0f;
-	RefreshTokenMaxCheckElapsedTime = 3.0f * 60.0f; // 3 minutes
-	bIsLoggedIn = false;
 }
 
 /*
@@ -500,7 +542,7 @@ FString FOnlineIdentityUEtopia::GetAuthType() const
 	return TEXT("");
 }
 
-void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::MeUser_HttpRequestComplete"));
 	bool bResult = false;
@@ -543,7 +585,6 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 					//Grab the firebaseUser.  We need it for the socket namespace.  This is already in our User
 					firebaseUser = User.firebaseUser;
 
-					bIsLoggedIn = true;
 
 					bResult = true;
 				}
@@ -577,81 +618,87 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 	TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, FUniqueNetIdString(User.UserId), ErrorStr);
 }
 
-bool FOnlineIdentityUEtopia::RequestTokenRefresh()
+
+void FOnlineIdentityUEtopia::OnAccessTokenLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UniqueId, const FString& Error)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::RequestTokenRefresh"));
-	return true;
+	bHasLoginOutstanding = false;
+
+	TriggerOnLoginCompleteDelegates(LocalUserNum, bWasSuccessful, UniqueId, Error);
+	if (bWasSuccessful)
+	{
+		// login status changed
+		TriggerOnLoginStatusChangedDelegates(LocalUserNum, ELoginStatus::NotLoggedIn, ELoginStatus::LoggedIn, UniqueId);
+	}
 }
 
-void FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+void FOnlineIdentityUEtopia::RequestCurrentPermissions(int32 LocalUserNum, FOnRequestCurrentPermissionsComplete& InCompletionDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete"));
-	bool bResult = false;
-	FString ResponseStr, ErrorStr;
-	FUserOnlineAccountUEtopia User;
-
-	FPendingLoginUser PendingRegisterUser = LoginUserRequests.FindRef(HttpRequest.Get());
-	// Remove the request from list of pending entries
-	LoginUserRequests.Remove(HttpRequest.Get());
-
-	if (bSucceeded &&
-		HttpResponse.IsValid())
+	IOnlineSharingPtr SharingInt = UEtopiaSubsystem->GetSharingInterface();
+	if (ensure(SharingInt.IsValid()))
 	{
-		ResponseStr = HttpResponse->GetContentAsString();
-		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		SharingInt->RequestCurrentPermissions(LocalUserNum, InCompletionDelegate);
+	}
+	else
+	{
+		FString ErrorStr = TEXT("No sharing interface, unable to request current sharing permissions");
+		TArray<FSharingPermission> EmptyPermissions;
+		InCompletionDelegate.ExecuteIfBound(LocalUserNum, false, EmptyPermissions);
+	}
+}
+
+
+const FUniqueNetId& FOnlineIdentityUEtopia::GetEmptyUniqueId()
+{
+	static TSharedRef<const FUniqueNetIdString> EmptyUniqueId = MakeShared<const FUniqueNetIdString>(FString());
+	return *EmptyUniqueId;
+}
+
+
+void FOnlineIdentityUEtopia::ProfileRequest(int32 LocalUserNum, const FString& AccessToken, const TArray<FString>& InProfileFields, FOnProfileRequestComplete& InCompletionDelegate)
+{
+	FString ErrorStr;
+	bool bStarted = false;
+	if (LocalUserNum >= 0 && LocalUserNum < MAX_LOCAL_PLAYERS)
+	{
+		if (!MeURL.IsEmpty())
 		{
-			UE_LOG(LogOnline, Verbose, TEXT("RefreshToken request complete. url=%s code=%d response=%s"),
-				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
-
-			// Create the Json parser
-			TSharedPtr<FJsonObject> JsonObject;
-			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
-
-			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
-				JsonObject.IsValid())
+			if (!AccessToken.IsEmpty())
 			{
-				FString temp_access_token = "none";
-				bool tokenReadSuccess = JsonObject->TryGetStringField("accessToken", temp_access_token);
+				bStarted = true;
 
-				if (tokenReadSuccess)
+				// kick off http request to get user info with the access token
+				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+				LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNum, AccessToken));
+
+				FString FinalURL = MeURL.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
+				if (InProfileFields.Num() > 0)
 				{
-
-					TSharedPtr<const FUniqueNetId> UserId = GetUniquePlayerId(0);
-					if (UserId.IsValid())
-					{
-						TSharedPtr<FUserOnlineAccountUEtopia> UserAccount = GetUEtopiaUserAccount(*UserId);
-
-
-						if (UserAccount.IsValid())
-						{
-							UserAccount->SetAccessToken(temp_access_token);
-
-							// reset the timer 
-							RefreshTokenLastCheckElapsedTime = 0.0f;
-							RefreshTokenTotalCheckElapsedTime = 0.0f;
-						}
-					}
+					FinalURL += FString::Printf(TEXT("&fields=%s"), *FString::Join(InProfileFields, TEXT(",")));
 				}
 
+				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete, InCompletionDelegate);
+				HttpRequest->SetURL(FinalURL);
+				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+				HttpRequest->SetVerb(TEXT("GET"));
+				HttpRequest->ProcessRequest();
 			}
-
-			
-
-
+			else
+			{
+				ErrorStr = TEXT("No access token specified");
+			}
 		}
 		else
 		{
-			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
-				HttpResponse->GetResponseCode(), *ResponseStr);
+			ErrorStr = TEXT("No MeURL specified in DefaultEngine.ini");
 		}
 	}
 	else
 	{
-		ErrorStr = TEXT("No response");
-	}
-	if (!ErrorStr.IsEmpty())
-	{
-		UE_LOG(LogOnline, Warning, TEXT("TokenRefresh request failed. %s"), *ErrorStr);
+		ErrorStr = TEXT("Invalid local user num");
 	}
 
+	if (!bStarted)
+	{
+		InCompletionDelegate.ExecuteIfBound(LocalUserNum, false, ErrorStr);
+	}
 }

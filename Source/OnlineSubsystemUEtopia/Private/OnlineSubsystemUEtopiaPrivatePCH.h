@@ -7,6 +7,7 @@
 #include "Http.h"
 #include "Json.h"
 #include "OnlineSubsystemUEtopiaModule.h"
+#include "OnlineSubsystemUEtopia.h"
 #include "OnlineSubsystemModule.h"
 #include "OnlineSubsystem.h"
 //#include "OnlineSessionSettingsUEtopia.h"
@@ -24,6 +25,6 @@
 /** URL Prefix when using UEtopia socket connection */
 #define UETOPIA_URL_PREFIX TEXT("UEtopia.")
 
-/** pre-pended to all NULL logging */
+/** pre-pended to all UEtopia logging */
 #undef ONLINE_LOG_PREFIX
 #define ONLINE_LOG_PREFIX TEXT("UETOPIA: ")

@@ -182,6 +182,7 @@ public:
 	}
 };
 
+
 bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionName, const FOnlineSessionSettings& NewSessionSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CreateSession"));
@@ -574,8 +575,7 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 				// TODO set a bool so we can inform the UI that we are matchmaking, and offer options to cancel.
 
-				// Legacy Polling matchmaker stuff - disabled.
-				//bCheckMatchmaker = true;
+				bCheckMatchmaker = true;
 				TimerMatchmakerSeconds = 0.0f;
 			}
 		}
@@ -596,13 +596,6 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 	// DO delegate?
 
 }
-
-bool FOnlineSessionUEtopia::OnMatchmakingStartedComplete(FName matchType, bool success)
-{
-	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::OnMatchmakingStartedComplete"));
-	return true;
-}
-
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName)
 {
@@ -844,6 +837,17 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					// Leaving it for now for debug purposes.
 					FName key = "session_host_address";
 					NewSession->SessionSettings.Set(key, session_host_address);
+
+
+					//key = "serverKey";
+					//NewSession->SessionSettings.Set(key, Attributes["key"]);
+					//key = "serverTitle";
+					//NewSession->SessionSettings.Set(key, Attributes["title"]);
+					// TODO add any other custom match settings we care about.
+
+						
+
+
 
 					TriggerOnMatchmakingCompleteDelegates(SessionName, false);
 
@@ -1266,7 +1270,7 @@ bool FOnlineSessionUEtopia::JoinSession(const FUniqueNetId& PlayerId, FName Sess
 bool FOnlineSessionUEtopia::FindFriendSession(int32 LocalUserNum, const FUniqueNetId& Friend)
 {
 	// this function has to exist due to interface definition, but it does not have a meaningful implementation in UEtopia subsystem
-	FOnlineSessionSearchResult EmptySearchResult;
+	TArray<FOnlineSessionSearchResult> EmptySearchResult;
 	TriggerOnFindFriendSessionCompleteDelegates(LocalUserNum, false, EmptySearchResult);
 	return false;
 };
@@ -1274,8 +1278,16 @@ bool FOnlineSessionUEtopia::FindFriendSession(int32 LocalUserNum, const FUniqueN
 bool FOnlineSessionUEtopia::FindFriendSession(const FUniqueNetId& LocalUserId, const FUniqueNetId& Friend)
 {
 	// this function has to exist due to interface definition, but it does not have a meaningful implementation in UEtopia subsystem
-	FOnlineSessionSearchResult EmptySearchResult;
+	TArray<FOnlineSessionSearchResult> EmptySearchResult;
 	TriggerOnFindFriendSessionCompleteDelegates(0, false, EmptySearchResult);
+	return false;
+}
+
+bool FOnlineSessionUEtopia::FindFriendSession(const FUniqueNetId& LocalUserId, const TArray<TSharedRef<const FUniqueNetId>>& FriendList)
+{
+	// this function has to exist due to interface definition, but it does not have a meaningful implementation in UEtopia subsystem
+	//TArray<FOnlineSessionSearchResult> EmptySearchResult;
+	//TriggerOnFindFriendSessionCompleteDelegates(0, false, EmptySearchResult);
 	return false;
 }
 
@@ -1372,7 +1384,7 @@ static bool GetConnectStringFromSessionInfo(TSharedPtr<FOnlineSessionInfoUEtopia
 	return bSuccess;
 }
 
-bool FOnlineSessionUEtopia::GetResolvedConnectString(FName SessionName, FString& ConnectInfo)
+bool FOnlineSessionUEtopia::GetResolvedConnectString(FName SessionName, FString& ConnectInfo, FName PortType)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Get Resolved Connect String"));
 	bool bSuccess = false;

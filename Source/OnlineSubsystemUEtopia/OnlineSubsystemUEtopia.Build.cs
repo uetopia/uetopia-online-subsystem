@@ -19,7 +19,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
         get { return Path.GetFullPath(Path.Combine(ThirdPartyPath, "Boost")); }
     }
 
-    public bool LoadLib(TargetInfo Target)
+    public bool LoadLib(ReadOnlyTargetRules Target)
     {
         bool isLibrarySupported = false;
 
@@ -40,8 +40,8 @@ public class OnlineSubsystemUEtopia : ModuleRules
         return isLibrarySupported;
     }
 
-    public OnlineSubsystemUEtopia(TargetInfo Target)
-	{
+    public OnlineSubsystemUEtopia(ReadOnlyTargetRules Target) : base(Target)
+    {
 		Definitions.Add("ONLINESUBSYSTEMUETOPIA_PACKAGE=1");
 
         PublicIncludePaths.AddRange(
@@ -50,6 +50,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
                     Path.Combine(BoostThirdParty, "Include"),
                     Path.Combine(SocketIOThirdParty, "Include"),
                     // ... add public include paths required here ...
+                    //"Runtime/LoginFlow/Public",
                 }
                 );
 
@@ -82,7 +83,8 @@ public class OnlineSubsystemUEtopia : ModuleRules
 				"OnlineSubsystemUtils",
 				"Json",
                 "HTTP",
-                "Networking"
+                "Networking",
+                //"LoginFlow"
                 
             }
 			);

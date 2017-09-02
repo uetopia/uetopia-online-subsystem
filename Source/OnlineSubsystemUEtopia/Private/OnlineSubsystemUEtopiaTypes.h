@@ -93,3 +93,58 @@ public:
 		return true;
 	}
 };
+
+
+/**
+* Facebook error from JSON payload
+*/
+class FErrorUEtopia :
+	public FOnlineJsonSerializable
+{
+public:
+
+	/**
+	* Constructor
+	*/
+	FErrorUEtopia()
+	{
+	}
+
+	class FErrorBody :
+		public FOnlineJsonSerializable
+	{
+
+	public:
+		/** Facebook error message */
+		FString Message;
+		/** Type of error reported by   */
+		FString Type;
+		/** Facebook error code */
+		int32 Code;
+		/**  error sub code */
+		int32 ErrorSubCode;
+		/**  trace id */
+		FString FBTraceId;
+
+		FErrorBody() {}
+
+		// FJsonSerializable
+		BEGIN_ONLINE_JSON_SERIALIZER
+			ONLINE_JSON_SERIALIZE("message", Message);
+		ONLINE_JSON_SERIALIZE("type", Type);
+		ONLINE_JSON_SERIALIZE("code", Code);
+		ONLINE_JSON_SERIALIZE("error_subcode", ErrorSubCode);
+		ONLINE_JSON_SERIALIZE("fbtrace_id", FBTraceId);
+		END_ONLINE_JSON_SERIALIZER
+	};
+
+	/** Main error body */
+	FErrorBody Error;
+
+	/** @return debug output for logs */
+	FString ToDebugString() const { return FString::Printf(TEXT("%s [Type:%s Code:%d SubCode:%d Trace:%s]"), *Error.Message, *Error.Type, Error.Code, Error.ErrorSubCode, *Error.FBTraceId); }
+
+	BEGIN_ONLINE_JSON_SERIALIZER
+		ONLINE_JSON_SERIALIZE_OBJECT_SERIALIZABLE("error", Error);
+	END_ONLINE_JSON_SERIALIZER
+};
