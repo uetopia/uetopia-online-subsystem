@@ -43,6 +43,8 @@ public class OnlineSubsystemUEtopia : ModuleRules
     public OnlineSubsystemUEtopia(ReadOnlyTargetRules Target) : base(Target)
     {
 		Definitions.Add("ONLINESUBSYSTEMUETOPIA_PACKAGE=1");
+        PCHUsage = PCHUsageMode.UseSharedPCHs;
+        //PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicIncludePaths.AddRange(
                 new string[] {
@@ -68,7 +70,8 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "Core",
                 "Json",
                 "JsonUtilities",
-                "SIOJson"
+                "SIOJson",
+                "OnlineSubsystemUtils",
                     // ... add other public dependencies that you statically link with here ...
                 }
                 );

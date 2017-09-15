@@ -81,12 +81,14 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 01"));
 	FString ErrorStr;
 
+
 	if (bHasLoginOutstanding)
 	{
 		ErrorStr = FString::Printf(TEXT("Registration already pending for user %d"),
 			LocalUserNumPendingLogin);
 	}
-	else if (!LoginURLDetails.IsValid())
+	else 
+	if (!LoginURLDetails.IsValid())
 	{
 		ErrorStr = FString::Printf(TEXT("OnlineSubsystemUEtopia is improperly configured in DefaultEngine.ini LoginURL=%s LoginRedirectUrl=%s ClientId=%s"),
 			*LoginURLDetails.LoginUrl, *LoginURLDetails.LoginRedirectUrl, *LoginURLDetails.ClientId);

@@ -28,23 +28,27 @@ bool FOnlineExternalUIUEtopia::ShowLoginUI(const int ControllerIndex, bool bShow
 			if (URLDetails.IsValid())
 			{
 				const FString RequestedURL = URLDetails.GetURL();
-				bool bShouldContinueLoginFlow = false;
-				FOnLoginRedirectURL OnRedirectURLDelegate = FOnLoginRedirectURL::CreateRaw(this, &FOnlineExternalUIUEtopia::OnLoginRedirectURL);
-				FOnLoginFlowComplete OnExternalLoginFlowCompleteDelegate = FOnLoginFlowComplete::CreateRaw(this, &FOnlineExternalUIUEtopia::OnExternalLoginFlowComplete, ControllerIndex, Delegate);
-				// Attempting to create a new login flow manager here...  Don't know if this is the right place to do it.
+				if (OnLoginFlowUIRequiredDelegates.IsBound())
+				{
+					bool bShouldContinueLoginFlow = false;
+					FOnLoginRedirectURL OnRedirectURLDelegate = FOnLoginRedirectURL::CreateRaw(this, &FOnlineExternalUIUEtopia::OnLoginRedirectURL);
+					FOnLoginFlowComplete OnExternalLoginFlowCompleteDelegate = FOnLoginFlowComplete::CreateRaw(this, &FOnlineExternalUIUEtopia::OnExternalLoginFlowComplete, ControllerIndex, Delegate);
+					// Attempting to create a new login flow manager here...  Don't know if this is the right place to do it.
 
-				
-				TriggerOnLoginFlowUIRequiredDelegates(RequestedURL, OnRedirectURLDelegate, OnExternalLoginFlowCompleteDelegate, bShouldContinueLoginFlow);
-				// we are supposed to do something here, but I can't find any documentation on it.
-				// Hardcodeing to true so we can continue
-				bStarted = true;
-				//bStarted = bShouldContinueLoginFlow;
+
+					TriggerOnLoginFlowUIRequiredDelegates(RequestedURL, OnRedirectURLDelegate, OnExternalLoginFlowCompleteDelegate, bShouldContinueLoginFlow);
+					// we are supposed to do something here, but I can't find any documentation on it.
+					// Hardcodeing to true so we can continue
+					//bStarted = true;
+					bStarted = bShouldContinueLoginFlow;
+				}
 			}
 		}
 	}
 
 	if (!bStarted)
 	{
+		UE_LOG_ONLINE(Display, TEXT("FOnlineExternalUIUEtopia::ShowLoginUI !bStarted"));
 		UEtopiaSubsystem->ExecuteNextTick([ControllerIndex, Delegate]()
 		{
 			Delegate.ExecuteIfBound(nullptr, ControllerIndex);
@@ -54,10 +58,19 @@ bool FOnlineExternalUIUEtopia::ShowLoginUI(const int ControllerIndex, bool bShow
 	return bStarted;
 }
 
+FLoginFlowResult FOnlineExternalUIUEtopia::ParseRedirectResult(const FUEtopiaLoginURL& URLDetails, const FString& RedirectURL)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineExternalUIUEtopia::ParseRedirectResult"));
+	FLoginFlowResult Result;
+	return Result;
+}
+
 FLoginFlowResult FOnlineExternalUIUEtopia::OnLoginRedirectURL(const FString& RedirectURL)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineExternalUIUEtopia::OnLoginRedirectURL"));
 	FLoginFlowResult Result;
+	//Result.IsComplete = false;
+	Result.Error.bSucceeded = false;
 
 	FOnlineIdentityUEtopiaPtr IdentityInt = StaticCastSharedPtr<FOnlineIdentityUEtopia>(UEtopiaSubsystem->GetIdentityInterface());
 	if (IdentityInt.IsValid())

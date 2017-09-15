@@ -190,6 +190,8 @@ public:
 	// This is not part of the OSS for some reason.  ???
 	bool FetchJoinedParties();
 
+	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
+
 	/**
 	* List of all subscribe-able notifications
 	*
@@ -217,9 +219,13 @@ private:
 	void CreateParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnCreatePartyComplete Delegate);
 	void SendInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendPartyInvitationComplete Delegate);
 
-	void JoinParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnJoinPartyComplete Delegate);
+	//void JoinParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnJoinPartyComplete Delegate);
 	
 	void FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+	void RejectInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+	void LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnLeavePartyComplete Delegate);
+
 
 	/** List of joined parties */
 	struct FOnlineJoinedParties

@@ -3,6 +3,7 @@
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "SIOLambdaRunnableUEtopia.h"
 
+
 uint64 FSIOLambdaRunnableUEtopia::ThreadNumber = 0;
 
 FSIOLambdaRunnableUEtopia::FSIOLambdaRunnableUEtopia(TFunction< void()> InFunction)

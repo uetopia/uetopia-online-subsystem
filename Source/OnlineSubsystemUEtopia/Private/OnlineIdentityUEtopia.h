@@ -41,6 +41,9 @@ public:
 	virtual FString GetAccessToken() const override { return AuthTicket; }
 	virtual bool GetAuthAttribute(const FString& AttrName, FString& OutAttrValue) const override;
 
+	// This is not part of the OSS, but we have to be able to set Access tokens, because they need to be refreshed.
+	bool SetAccessToken(FString& InAceessToken);
+
 	// FUserOnlineAccountUEtopia
 	/*
 	FUserOnlineAccountUEtopia(const FString& InUserId=TEXT(""))
@@ -193,6 +196,9 @@ class FOnlineIdentityUEtopia : public IOnlineIdentity
 	/** index of local user being registered */
 	int32 LocalUserNumPendingLogin;
 
+	/** True if the user is logged in */
+	bool bIsLoggedIn;
+
 public:
 
 	// IOnlineIdentity
@@ -213,6 +219,9 @@ public:
 	virtual void GetUserPrivilege(const FUniqueNetId& UserId, EUserPrivileges::Type Privilege, const FOnGetUserPrivilegeCompleteDelegate& Delegate) override;
 	virtual FPlatformUserId GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& UniqueNetId) override;
 	virtual FString GetAuthType() const override; // 4.11
+
+	// Not part of the oss, but we use it internally
+	TSharedPtr<FUserOnlineAccountUEtopia> GetUEtopiaUserAccount(const FUniqueNetId& UserId) const;
 
 	// FOnlineIdentityUEtopia
 

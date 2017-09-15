@@ -28,6 +28,7 @@ public:
 	virtual bool IsJoined() const override;
 	virtual const class FChatRoomConfig& GetRoomConfig() const override;
 	virtual FString ToDebugString() const override;
+	virtual void SetChatInfo(const TSharedRef<class FJsonObject>& JsonInfo) override;
 
 private:
 	const FChatRoomId RoomId;

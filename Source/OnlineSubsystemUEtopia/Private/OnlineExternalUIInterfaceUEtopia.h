@@ -41,6 +41,9 @@ public:
 
 private:
 
+	// don't think we need this, just testing
+	FLoginFlowResult ParseRedirectResult(const FUEtopiaLoginURL& URLDetails, const FString& RedirectURL);
+
 	/**
 	 * Delegate fired when redirect URLs from the login flow are passed back for parsing
 	 * We are looking for the success or error completion state from UEtopia to grab the access token or complete the flow

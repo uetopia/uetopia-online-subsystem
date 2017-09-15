@@ -575,7 +575,8 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 				// TODO set a bool so we can inform the UI that we are matchmaking, and offer options to cancel.
 
-				bCheckMatchmaker = true;
+				// Legacy Polling matchmaker stuff - disabled.
+				//bCheckMatchmaker = true;
 				TimerMatchmakerSeconds = 0.0f;
 			}
 		}
@@ -596,6 +597,13 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 	// DO delegate?
 
 }
+
+bool FOnlineSessionUEtopia::OnMatchmakingStartedComplete(FName matchType, bool success)
+{
+	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::OnMatchmakingStartedComplete"));
+	return true;
+}
+
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName)
 {
@@ -708,6 +716,8 @@ void FOnlineSessionUEtopia::CancelMatchmaking_HttpRequestComplete(FHttpRequestPt
 
 void FOnlineSessionUEtopia::CheckMatchmaking()
 {
+	// This is unused - We're using socket puch now.
+	// TODO deprecate
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking"));
 
 	FString GameKey = UEtopiaSubsystem->GetGameKey();
@@ -1626,7 +1636,7 @@ void FOnlineSessionUEtopia::Tick(float DeltaTime)
 
 void FOnlineSessionUEtopia::TickMatchmakerTasks(float DeltaTime)
 {
-	// TODO
+	// TODO deprecate - this is unused
 	if (bCheckMatchmaker) {
 		//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::TickMatchmakerTask bCheckMatchmaker"));
 		TimerMatchmakerSeconds = TimerMatchmakerSeconds + DeltaTime;

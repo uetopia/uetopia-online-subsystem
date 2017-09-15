@@ -3,6 +3,7 @@
 #pragma once
 
 #include "sio_client.h"
+#include "Http.h"
 #include "SIOJsonObject.h"
 #include "SIOJsonValue.h"
 #include "SIOJConvert.h"
@@ -54,6 +55,7 @@ enum ESIOConnectionCloseReason
 /** Forward declarations of all interface classes */
 typedef TSharedPtr<class FOnlineSessionUEtopia, ESPMode::ThreadSafe> FOnlineSessionUEtopiaPtr;
 typedef TSharedPtr<class FOnlineProfileUEtopia, ESPMode::ThreadSafe> FOnlineProfileUEtopiaPtr;
+typedef TSharedPtr<class FOnlineChatUEtopia, ESPMode::ThreadSafe> FOnlineChatUEtopiaPtr;
 typedef TSharedPtr<class FOnlineFriendsUEtopia, ESPMode::ThreadSafe> FOnlineFriendsUEtopiaPtr;
 typedef TSharedPtr<class FOnlineSharingUEtopia, ESPMode::ThreadSafe> FOnlineSharingUEtopiaPtr;
 typedef TSharedPtr<class FOnlinePartyUEtopia, ESPMode::ThreadSafe> FOnlinePartyUEtopiaPtr;
@@ -65,6 +67,7 @@ typedef TSharedPtr<class FOnlineIdentityUEtopia, ESPMode::ThreadSafe> FOnlineIde
 typedef TSharedPtr<class FOnlineAchievementsUEtopia, ESPMode::ThreadSafe> FOnlineAchievementsUEtopiaPtr;
 typedef TSharedPtr<class FOnlineExternalUIUEtopiaCommon, ESPMode::ThreadSafe> FOnlineExternalUIInterfaceUEtopiaPtr;
 //typedef TSharedPtr<class FOnlineUserUEtopiaCommon, ESPMode::ThreadSafe> FOnlineUserUEtopiaCommonPtr;
+typedef TSharedPtr<class FOnlineTournamentSystemUEtopia, ESPMode::ThreadSafe> FOnlineTouramentsUEtopiaPtr;
 
 /**
  *	OnlineSubsystemUEtopia - Implementation of the online subsystem for UEtopia services
@@ -105,11 +108,14 @@ public:
 	virtual IOnlinePresencePtr GetPresenceInterface() const override;
 	virtual IOnlineChatPtr GetChatInterface() const override;
     virtual IOnlineTurnBasedPtr GetTurnBasedInterface() const override;
+	virtual IOnlineTournamentPtr GetTournamentInterface() const override;
 
 	virtual bool Init() override;
 	virtual bool Shutdown() override;
 	virtual FString GetAppId() const override;
 	virtual bool Exec(class UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar) override;
+
+	virtual FText GetOnlineServiceName() const override;
 
 	FString GetAPIURL();
 	FString GetGameKey();
@@ -157,6 +163,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
 		void Connect(const FString& InAddressAndPort, USIOJsonObject* Query = nullptr, USIOJsonObject* Headers = nullptr);
 
+
+#if !UE_SERVER
+
+	/** Run post auth processes */
+	//UPROPERTY( Category = "SocketIO Events")
+	void OnAuthenticated();
+
 	/**
 	* Emit a raw sio::message event
 	*
@@ -177,7 +190,7 @@ public:
 	* @param Message	SIOJJsonValue
 	* @param Namespace	Namespace within socket.io
 	*/
-	UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
+	//UFUNCTION(BlueprintCallable, Category = "SocketIO Functions")
 		void Emit(const FString& EventName, USIOJsonValue* Message = nullptr, const FString& Namespace = FString(TEXT("/")));
 
 
@@ -309,7 +322,7 @@ public:
 		TFunction< void(const FString&, const sio::message::ptr&)> CallbackFunction,
 		const FString& Namespace = FString(TEXT("/")));
 
-
+#endif
 
 PACKAGE_SCOPE:
 
@@ -356,6 +369,9 @@ private:
 	/** Interface for achievements */
 	FOnlineAchievementsUEtopiaPtr AchievementsInterface;
 
+	/** implementation of chat interface */
+	FOnlineChatUEtopiaPtr UEtopiaChat;
+
 	/** implementation of friends interface */
 	FOnlineFriendsUEtopiaPtr UEtopiaFriends;
 
@@ -373,6 +389,9 @@ private:
 	// It never gets initialized...  WHy is it there?
 	//FOnlineUserUEtopiaCommonPtr UEtopiaUser;
 
+	// TOURNAMENTS
+	FOnlineTouramentsUEtopiaPtr UEtopiaTournaments;
+
 	/** Online async task runnable */
 	class FOnlineAsyncTaskManagerUEtopia* OnlineAsyncTaskThreadRunnable;
 
@@ -381,9 +400,18 @@ private:
 
 	FString _configPath = "";
 
+	// This is called after login is completed, and signals the backend to do any additional processing
+	// Like, rejoin a match in progress.
+	bool PostLoginBackendProcess();
+	/* http complete */
+	void PostLoginBackendProcess_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
+
 protected:
+#if !UE_SERVER
 	sio::client* PrivateClient;
 	class FSIOLambdaRunnableUEtopia* ConnectionThread;
+#endif
 };
 
 typedef TSharedPtr<FOnlineSubsystemUEtopia, ESPMode::ThreadSafe> FOnlineSubsystemUEtopiaPtr;

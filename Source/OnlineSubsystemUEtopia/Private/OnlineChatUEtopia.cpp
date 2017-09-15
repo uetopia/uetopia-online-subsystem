@@ -55,6 +55,11 @@ FString FChatRoomInfoUEtopia::ToDebugString() const
 	return RoomId;
 }
 
+void FChatRoomInfoUEtopia::SetChatInfo(const TSharedRef<class FJsonObject>& JsonInfo)
+{
+	return;
+}
+
 //FChatRoomMemberUEtopia
 
 FChatRoomMemberUEtopia::FChatRoomMemberUEtopia(const TSharedRef<const FUniqueNetId>& pid, const FString& playernickname)

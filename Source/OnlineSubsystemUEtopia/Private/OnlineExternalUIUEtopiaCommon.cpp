@@ -66,17 +66,3 @@ bool FOnlineExternalUIUEtopiaCommon::ShowProfileUI(const FUniqueNetId& Requestor
 	return false;
 }
 
-bool FOnlineExternalUIUEtopiaCommon::ShowPlatformMessageBox(const FUniqueNetId& UserId, EPlatformMessageType MessageType)
-{
-	return false;
-}
-
-void FOnlineExternalUIUEtopiaCommon::ReportEnterInGameStoreUI()
-{
-	return;
-}
-
-void FOnlineExternalUIUEtopiaCommon::ReportExitInGameStoreUI()
-{
-	return;
-}
