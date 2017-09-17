@@ -1,6 +1,8 @@
 # uetopia-online-subsystem
 Online Subsystem plugin for Unreal Engine 4
 
-Master Branch:  Pre-Alpha testing and development.  
+4.17 Branch requires some engine patches, until the pull request is approved.  Fixes for "loginFLow" and "missing libcef.so" as well as OSS support for tournaments, and some extra delegates.
 
-Currently working on 4.15
+You can use a pre-patched 4.17 engine here:
+
+https://github.com/uetopia/UnrealEngine/tree/4.17_UEtopia_Patched
