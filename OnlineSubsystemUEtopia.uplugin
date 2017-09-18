@@ -20,7 +20,7 @@
 			"Name": "SIOJson",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
-		},
+		}
   ],
 	"Plugins": [
     {
