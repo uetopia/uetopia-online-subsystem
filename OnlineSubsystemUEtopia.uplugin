@@ -22,6 +22,16 @@
 			"LoadingPhase": "PreDefault"
 		},
   ],
+	"Plugins": [
+    {
+      "Name": "OnlineSubsystem",
+      "Enabled": true
+    },
+    {
+      "Name": "OnlineSubsystemUtils",
+      "Enabled": true
+    }
+  ],
 	"EnabledByDefault": false,
 	"CanContainContent": false,
 	"IsBetaVersion": false,
