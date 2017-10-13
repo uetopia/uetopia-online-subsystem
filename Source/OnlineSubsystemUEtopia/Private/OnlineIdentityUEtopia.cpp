@@ -94,7 +94,7 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 		ErrorStr = FString::Printf(TEXT("Registration already pending for user %d"),
 			LocalUserNumPendingLogin);
 	}
-	else 
+	else
 	if (!LoginURLDetails.IsValid())
 	{
 		ErrorStr = FString::Printf(TEXT("OnlineSubsystemUEtopia is improperly configured in DefaultEngine.ini LoginURL=%s LoginRedirectUrl=%s ClientId=%s"),
@@ -163,7 +163,7 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 				}
 			}
 		}
-		
+
 
 	}
 
@@ -305,7 +305,7 @@ void FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete(FHttpRequestPtr Ht
 						{
 							UserAccount->SetAccessToken(temp_access_token);
 
-							// reset the timer 
+							// reset the timer
 							RefreshTokenLastCheckElapsedTime = 0.0f;
 							RefreshTokenTotalCheckElapsedTime = 0.0f;
 						}
@@ -658,7 +658,7 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsys
 	SocketExternalIpSet = false;
 	RefreshTokenLastCheckElapsedTime = 0.0f;
 	RefreshTokenTotalCheckElapsedTime = 0.0f;
-	RefreshTokenMaxCheckElapsedTime = 3.0f * 60.0f; // 3 minutes
+	RefreshTokenMaxCheckElapsedTime = 15.0f * 60.0f; // 15 minutes
 	bIsLoggedIn = false;
 }
 
@@ -726,7 +726,7 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 
 			if (User.FromJson(ResponseStr))
 			{
-				
+
 				if (!User.UserId.IsEmpty())
 				{
 					// copy and construct the unique id
