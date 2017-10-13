@@ -29,6 +29,12 @@ bool FUserOnlineAccountUEtopia::GetUserAttribute(const FString& AttrName, FStrin
 	return false;
 }
 
+bool FUserOnlineAccountUEtopia::SetAccessToken(FString& InAceessToken)
+{
+	AuthTicket = InAceessToken;
+	return true;
+}
+
 bool FUserOnlineAccountUEtopia::SetUserAttribute(const FString& AttrName, const FString& AttrValue)
 {
 	const FString* FoundAttr = UserAttributes.Find(AttrName);
@@ -73,6 +79,7 @@ void FOnlineIdentityUEtopia::Tick(float DeltaTime)
 	// Only tick once per frame
 	//  As of 4.16 this does not exist anymore
 	//TickLogin(DeltaTime);
+	TickRefreshToken(DeltaTime);
 }
 
 
@@ -191,6 +198,154 @@ void FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FString& AccessToke
 	});
 
 	ProfileRequest(LocalUserNum, AccessToken, ProfileFields, CompletionDelegate);
+}
+
+
+
+/**
+* Ticks the registration process handling timeouts, etc.
+*
+* @param DeltaTime the amount of time that has elapsed since last tick
+*/
+void FOnlineIdentityUEtopia::TickRefreshToken(float DeltaTime)
+{
+	//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken"));
+
+	if (bIsLoggedIn)
+	{
+		//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken bIsLoggedIn"));
+		RefreshTokenLastCheckElapsedTime += DeltaTime;
+		RefreshTokenTotalCheckElapsedTime += DeltaTime;
+		// See if enough time has elapsed in order to check for completion
+		if (RefreshTokenTotalCheckElapsedTime > RefreshTokenMaxCheckElapsedTime)
+		{
+			//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : RefreshTokenTotalCheckElapsedTime > RefreshTokenMaxCheckElapsedTime"));
+			// space out requests to allow time for completion
+			if (RefreshTokenLastCheckElapsedTime > 10.0f)
+			{
+				UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : REFRESHING"));
+				RefreshTokenLastCheckElapsedTime = 0.f;
+
+				// kick off http request to get user info with the new token
+				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+
+				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete);
+				FString RefreshUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/users/v1/refreshToken");
+
+				//FString GameKey = UEtopiaSubsystem->GetGameKey();
+
+				//TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+				//RequestJsonObj->SetStringField("GameKeyId", GameKey);
+
+				//FString JsonOutputString;
+				//TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+				//FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+
+				//FString OutputString = "GameKeyId=" + GameKey;
+				HttpRequest->SetURL(RefreshUrlHardcoded);
+				HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+				HttpRequest->SetHeader(TEXT("x-uetopia-auth"), GetAuthToken(0));
+				//HttpRequest->SetContentAsString(JsonOutputString);
+				HttpRequest->SetVerb(TEXT("POST"));
+
+				bool requestsuccess = HttpRequest->ProcessRequest();
+
+
+			}
+
+
+		}
+	}
+
+}
+
+
+void FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete"));
+	bool bResult = false;
+	FString ResponseStr, ErrorStr;
+	FUserOnlineAccountUEtopia User;
+
+	FPendingLoginUser PendingRegisterUser = LoginUserRequests.FindRef(HttpRequest.Get());
+	// Remove the request from list of pending entries
+	LoginUserRequests.Remove(HttpRequest.Get());
+
+	if (bSucceeded &&
+		HttpResponse.IsValid())
+	{
+		ResponseStr = HttpResponse->GetContentAsString();
+		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		{
+			UE_LOG(LogOnline, Verbose, TEXT("RefreshToken request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+
+			// Create the Json parser
+			TSharedPtr<FJsonObject> JsonObject;
+			TSharedRef<TJsonReader<> > JsonReader = TJsonReaderFactory<>::Create(ResponseStr);
+
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) &&
+				JsonObject.IsValid())
+			{
+				FString temp_access_token = "none";
+				bool tokenReadSuccess = JsonObject->TryGetStringField("accessToken", temp_access_token);
+
+				if (tokenReadSuccess)
+				{
+
+					TSharedPtr<const FUniqueNetId> UserId = GetUniquePlayerId(0);
+					if (UserId.IsValid())
+					{
+						TSharedPtr<FUserOnlineAccountUEtopia> UserAccount = GetUEtopiaUserAccount(*UserId);
+
+
+						if (UserAccount.IsValid())
+						{
+							UserAccount->SetAccessToken(temp_access_token);
+
+							// reset the timer 
+							RefreshTokenLastCheckElapsedTime = 0.0f;
+							RefreshTokenTotalCheckElapsedTime = 0.0f;
+						}
+					}
+				}
+
+			}
+
+
+
+
+		}
+		else
+		{
+			ErrorStr = FString::Printf(TEXT("Invalid response. code=%d error=%s"),
+				HttpResponse->GetResponseCode(), *ResponseStr);
+		}
+	}
+	else
+	{
+		ErrorStr = TEXT("No response");
+	}
+	if (!ErrorStr.IsEmpty())
+	{
+		UE_LOG(LogOnline, Warning, TEXT("TokenRefresh request failed. %s"), *ErrorStr);
+	}
+
+}
+
+TSharedPtr<FUserOnlineAccountUEtopia> FOnlineIdentityUEtopia::GetUEtopiaUserAccount(const FUniqueNetId& UserId) const
+{
+	TSharedPtr<FUserOnlineAccountUEtopia> Result;
+
+	const TSharedRef<FUserOnlineAccountUEtopia>* FoundUserAccount = UserAccounts.Find(UserId.ToString());
+	if (FoundUserAccount != NULL)
+	{
+		Result = *FoundUserAccount;
+	}
+
+	return Result;
 }
 
 
@@ -499,7 +654,12 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsys
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing MeURL= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
+
 	SocketExternalIpSet = false;
+	RefreshTokenLastCheckElapsedTime = 0.0f;
+	RefreshTokenTotalCheckElapsedTime = 0.0f;
+	RefreshTokenMaxCheckElapsedTime = 3.0f * 60.0f; // 3 minutes
+	bIsLoggedIn = false;
 }
 
 /*
@@ -587,6 +747,7 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 					//Grab the firebaseUser.  We need it for the socket namespace.  This is already in our User
 					firebaseUser = User.firebaseUser;
 
+					bIsLoggedIn = true;
 
 					bResult = true;
 				}

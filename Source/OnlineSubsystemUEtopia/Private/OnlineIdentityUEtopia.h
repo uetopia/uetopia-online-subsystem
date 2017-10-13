@@ -199,6 +199,23 @@ class FOnlineIdentityUEtopia : public IOnlineIdentity
 	/** True if the user is logged in */
 	bool bIsLoggedIn;
 
+
+	// Refresh Token Timer 
+	/**
+	* Ticks the registration process handling timeouts, etc.
+	*
+	* @param DeltaTime the amount of time that has elapsed since last tick
+	*/
+	void TickRefreshToken(float DeltaTime);
+
+	/** The amount of elapsed time since the last check */
+	float RefreshTokenLastCheckElapsedTime;
+	/** Used to determine if we've timed out waiting for the response */
+	float RefreshTokenTotalCheckElapsedTime;
+	/** Config value used to set our timeout period - set in constructor*/
+	float RefreshTokenMaxCheckElapsedTime;
+
+
 public:
 
 	// IOnlineIdentity
@@ -336,6 +353,17 @@ private:
 	*/
 	//void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 	void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate);
+
+	/**
+	* Request a Token Refresh from the backend
+	*/
+	bool RequestTokenRefresh();
+
+	/**
+	* Delegate called when a token refresh request is complete
+	*/
+	void TokenRefresh_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
+
 
 	/** Info used to send request to register a user */
 	struct FPendingLoginUser
