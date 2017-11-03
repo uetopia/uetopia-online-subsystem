@@ -619,6 +619,15 @@ FString FOnlineIdentityUEtopia::GetAuthToken(int32 LocalUserNum) const
 	return FString();
 }
 
+void FOnlineIdentityUEtopia::RevokeAuthToken(const FUniqueNetId& UserId, const FOnRevokeAuthTokenCompleteDelegate& Delegate)
+{
+	UE_LOG(LogOnline, Display, TEXT("FOnlineIdentityUEtopia::RevokeAuthToken not implemented"));
+	TSharedRef<const FUniqueNetId> UserIdRef(UserId.AsShared());
+	UEtopiaSubsystem->ExecuteNextTick([UserIdRef, Delegate]()
+	{
+		Delegate.ExecuteIfBound(*UserIdRef, FOnlineError(FString(TEXT("RevokeAuthToken not implemented"))));
+	});
+}
 
 /**
 * Sets the needed configuration properties
@@ -685,7 +694,8 @@ void FOnlineIdentityUEtopia::GetUserPrivilege(const FUniqueNetId& UserId, EUserP
 	Delegate.ExecuteIfBound(UserId, Privilege, (uint32)EPrivilegeResults::NoFailures);
 }
 
-FPlatformUserId FOnlineIdentityUEtopia::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& UniqueNetId)
+
+FPlatformUserId FOnlineIdentityUEtopia::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& UniqueNetId) const
 {
 	for (int i = 0; i < MAX_LOCAL_PLAYERS; ++i)
 	{
