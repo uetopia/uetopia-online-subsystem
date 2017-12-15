@@ -67,7 +67,9 @@ typedef TSharedPtr<class FOnlineIdentityUEtopia, ESPMode::ThreadSafe> FOnlineIde
 typedef TSharedPtr<class FOnlineAchievementsUEtopia, ESPMode::ThreadSafe> FOnlineAchievementsUEtopiaPtr;
 typedef TSharedPtr<class FOnlineExternalUIUEtopiaCommon, ESPMode::ThreadSafe> FOnlineExternalUIInterfaceUEtopiaPtr;
 //typedef TSharedPtr<class FOnlineUserUEtopiaCommon, ESPMode::ThreadSafe> FOnlineUserUEtopiaCommonPtr;
-typedef TSharedPtr<class FOnlineTournamentSystemUEtopia, ESPMode::ThreadSafe> FOnlineTouramentsUEtopiaPtr;
+
+// Tournaments are not enabled in this branch.  Use the 4.18 branch if you want tournament support.
+//typedef TSharedPtr<class FOnlineTournamentSystemUEtopia, ESPMode::ThreadSafe> FOnlineTouramentsUEtopiaPtr;
 
 /**
  *	OnlineSubsystemUEtopia - Implementation of the online subsystem for UEtopia services
@@ -108,7 +110,7 @@ public:
 	virtual IOnlinePresencePtr GetPresenceInterface() const override;
 	virtual IOnlineChatPtr GetChatInterface() const override;
     virtual IOnlineTurnBasedPtr GetTurnBasedInterface() const override;
-	virtual IOnlineTournamentPtr GetTournamentInterface() const override;
+	//virtual IOnlineTournamentPtr GetTournamentInterface() const override;
 
 	virtual bool Init() override;
 	virtual bool Shutdown() override;
@@ -390,7 +392,7 @@ private:
 	//FOnlineUserUEtopiaCommonPtr UEtopiaUser;
 
 	// TOURNAMENTS
-	FOnlineTouramentsUEtopiaPtr UEtopiaTournaments;
+	//FOnlineTouramentsUEtopiaPtr UEtopiaTournaments;
 
 	/** Online async task runnable */
 	class FOnlineAsyncTaskManagerUEtopia* OnlineAsyncTaskThreadRunnable;

@@ -119,7 +119,8 @@ FOnlineChatUEtopia::FOnlineChatUEtopia(FOnlineSubsystemUEtopia* InSubsystem)
 	//ReadJoinedRooms(0);
 
 	// Bind a delegate to look up the room list when it changes
-	AddOnChatRoomListChangedDelegate_Handle(FOnChatRoomListChangedDelegate::CreateRaw(this, &FOnlineChatUEtopia::OnChatRoomListChangedComplete));
+	// THis is not supported in this branch.  Use the 4.18 branch for full chat room support.
+	//AddOnChatRoomListChangedDelegate_Handle(FOnChatRoomListChangedDelegate::CreateRaw(this, &FOnlineChatUEtopia::OnChatRoomListChangedComplete));
 	//OnChatRoomListChangedDelegate = FOnChatRoomListChangedDelegate::BindUObject( this, FOnlineChatUEtopia::OnChatRoomListChangedComplete);
 
 }
@@ -594,10 +595,10 @@ void FOnlineChatUEtopia::ReadJoinedRooms_HttpRequestComplete(FHttpRequestPtr Htt
 		UE_LOG(LogOnline, Warning, TEXT("ReadJoinedRooms_HttpRequestComplete request failed. %s"), *ErrorStr);
 	}
 
-	// TODO delegates
+	//  delegates not supported in this branch.  use the full 4.18 branch.
 	//TriggerOnChatRoomJoinPublicDelegates()
-	const TSharedPtr<const FUniqueNetId> OwnerUserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
-	TriggerOnChatRoomListReadCompleteDelegates(*OwnerUserId, ErrorStr);
+	//const TSharedPtr<const FUniqueNetId> OwnerUserId = OnlineSub->GetIdentityInterface()->GetUniquePlayerId(0);
+	//TriggerOnChatRoomListReadCompleteDelegates(*OwnerUserId, ErrorStr);
 }
 
 void FOnlineChatUEtopia::OnChatRoomListChangedComplete(const FUniqueNetId& UserId, const FString& Error)

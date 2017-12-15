@@ -329,7 +329,8 @@ public:
 	virtual bool IsPlayerInSession(FName SessionName, const FUniqueNetId& UniqueId) override;
 	virtual bool StartMatchmaking(const TArray< TSharedRef<const FUniqueNetId> >& LocalPlayers, FName SessionName, const FOnlineSessionSettings& NewSessionSettings, TSharedRef<FOnlineSessionSearch>& SearchSettings) override;
 	// ADDED BY UETOPIA
-	virtual bool OnMatchmakingStartedComplete(FName matchType, bool success) override;
+	// Not supported in this branch.  use the full 4.18 branch for this
+	//virtual bool OnMatchmakingStartedComplete(FName matchType, bool success) override;
 	//
 	virtual bool CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName) override;
 	virtual bool CancelMatchmaking(const FUniqueNetId& SearchingPlayerId, FName SessionName) override;

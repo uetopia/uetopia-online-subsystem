@@ -136,8 +136,9 @@ public:
 	DEFINE_ONLINE_DELEGATE_TWO_PARAM(OnChatPrivateMessageReceived, const FUniqueNetId&, const TSharedRef<FChatMessage>&);
 	*/
 
-	//Setup delegates that we are using internally
-	FOnChatRoomListChangedDelegate OnChatRoomListChangedDelegate;
+	// Not supported in this branch.
+	// For full chat support use the regular 4.18 branch
+	//FOnChatRoomListChangedDelegate OnChatRoomListChangedDelegate;
 
 private:
 	/** For accessing identity/token info of user logged in */

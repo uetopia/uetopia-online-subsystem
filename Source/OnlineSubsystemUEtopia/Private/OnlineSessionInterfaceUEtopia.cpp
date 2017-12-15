@@ -598,11 +598,15 @@ void FOnlineSessionUEtopia::StartMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 }
 
+/*
+// Not supported in this branch.  use the full 4.18 branch for this!
 bool FOnlineSessionUEtopia::OnMatchmakingStartedComplete(FName matchType, bool success)
 {
-	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::OnMatchmakingStartedComplete"));
-	return true;
+UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::OnMatchmakingStartedComplete"));
+return true;
 }
+*/
+
 
 
 bool FOnlineSessionUEtopia::CancelMatchmaking(int32 SearchingPlayerNum, FName SessionName)

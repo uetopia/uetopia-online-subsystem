@@ -12,7 +12,7 @@
 #include "OnlineChatUEtopia.h"
 #include "OnlinePartyUEtopia.h"
 #include "OnlineSharingUEtopia.h"
-#include "OnlineTournamentsUEtopia.h"
+//#include "OnlineTournamentsUEtopia.h"
 #include "OnlineExternalUIInterfaceUEtopia.h"
 //#include "OnlineExternalUIUEtopiaCommon.h"
 #include "VoiceInterfaceImpl.h"
@@ -129,10 +129,13 @@ IOnlineTurnBasedPtr FOnlineSubsystemUEtopia::GetTurnBasedInterface() const
 	return nullptr;
 }
 
+/*
 IOnlineTournamentPtr FOnlineSubsystemUEtopia::GetTournamentInterface() const
 {
-	return UEtopiaTournaments;
+return UEtopiaTournaments;
 }
+*/
+
 
 bool FOnlineSubsystemUEtopia::Tick(float DeltaTime)
 {
@@ -236,7 +239,7 @@ bool FOnlineSubsystemUEtopia::Init()
 		UEtopiaParty = MakeShareable(new FOnlinePartyUEtopia(this));
 		UEtopiaChat = MakeShareable(new FOnlineChatUEtopia(this));
 		UEtopiaExternalUI = MakeShareable(new FOnlineExternalUIUEtopia(this));
-		UEtopiaTournaments = MakeShareable(new FOnlineTournamentSystemUEtopia(this));
+		//UEtopiaTournaments = MakeShareable(new FOnlineTournamentSystemUEtopia(this));
 
 		if (!VoiceInterface->Init())
 		{
@@ -464,7 +467,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
 
 			// Trigger the delegate to cause the UI to update
-			this->GetChatInterface()->TriggerOnChatRoomListChangedDelegates(*SenderUserIdPtr, textMessage);
+			//this->GetChatInterface()->TriggerOnChatRoomListChangedDelegates(*SenderUserIdPtr, textMessage);
 
 		}, FString("/"));
 
@@ -623,7 +626,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			FString matchType = JsonResponse.GetStringField("matchType");
 			FName ConvertedmatchType = FName(*matchType);
 			// Trigger the delegate to cause the UI to update
-			this->GetSessionInterface()->TriggerOnMatchmakingStartedDelegates(ConvertedmatchType, true);
+			//this->GetSessionInterface()->TriggerOnMatchmakingStartedDelegates(ConvertedmatchType, true);
 
 			//this->OnMatchmakingStartedComplete("test", true);
 
@@ -906,7 +909,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			UE_LOG(LogTemp, Log, TEXT("2) Received a response: %s"), *USIOJConvert::ToJsonString(Message));
 			// Tell the tournaments interface to reload the tournament list
 
-			this->GetTournamentInterface()->FetchJoinableTournaments();
+			//this->GetTournamentInterface()->FetchJoinableTournaments();
 
 			//this->GetFriendsInterface()->DeleteFriendsList(0, "default");
 			//this->GetFriendsInterface()->ReadFriendsList(0, "default");
@@ -964,7 +967,7 @@ void FOnlineSubsystemUEtopia::OnAuthenticated()
 	bool partiesJoined = UEtopiaParty->FetchJoinedParties();
 	// Get the Chat Channels
 	bool lookedUpChatChannels = UEtopiaChat->ReadJoinedRooms(0);
-	bool lookedUpTournaments = UEtopiaTournaments->FetchJoinableTournaments();
+	//bool lookedUpTournaments = UEtopiaTournaments->FetchJoinableTournaments();
 
 	return;
 }

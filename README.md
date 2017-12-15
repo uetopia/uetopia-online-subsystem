@@ -1,8 +1,8 @@
 # uetopia-online-subsystem
 Online Subsystem plugin for Unreal Engine 4
 
-4.18 Branch requires some OSS changes:  support for tournaments, and some extra delegates.
+This branch is for the stock 4.18 engine.
 
-You can use a pre-patched 4.18 engine here:
+It does not include the custom OSS changes for Matchmaker, Tournaments, and Chat channel delegates.
 
-https://github.com/uetopia/UnrealEngine/tree/4.18.0_UETOPIA_oss_changes
+If you want to use matchmaker, tournaments, or push chat channels, use the regular 4.18 branch, and patched 4.18 engine.
