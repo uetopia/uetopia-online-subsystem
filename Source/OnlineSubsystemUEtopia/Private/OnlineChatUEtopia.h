@@ -111,6 +111,10 @@ public:
 	// DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChatRoomListChanged, const FUniqueNetId& /*UserId*/, const FString& /*Error*/);
 	void OnChatRoomListChangedComplete(const FUniqueNetId& UserId, const FString& Error);
 
+	// this is only needed becuase of the stupid OSS hack workaround.
+	// delete this if you're using the full enhanced OSS
+	void OnChatRoomExitComplete(const FUniqueNetId& UserId, const FChatRoomId& ChatRoomId, const bool unused, const FString& Error);
+
 	/**
 	* Constructor
 	*

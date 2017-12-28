@@ -483,8 +483,8 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 		ResponseStr = HttpResponse->GetContentAsString();
 		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
-			//UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
-			//	*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+			UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
 
 			// Create the Json parser
 			TSharedPtr<FJsonObject> JsonObject;
@@ -506,31 +506,18 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 					bool UserIsOnline = false;
 					TMap<FString, FString> Attributes;
 					TSharedPtr<FJsonObject> JsonFriendEntry = (*FriendIt)->AsObject();
+
+					JsonFriendEntry->TryGetStringField("keyIdStr", UserIdStr);
+					JsonFriendEntry->TryGetBoolField("bIsPlayingThisGame", UserIsPlayingThisGame);
+					JsonFriendEntry->TryGetBoolField("bIsOnline", UserIsOnline);
+
 					for (TMap<FString, TSharedPtr<FJsonValue > >::TConstIterator It(JsonFriendEntry->Values); It; ++It)
 					{
 						// parse user attributes
 						if (It->Value.IsValid() && It->Value->Type == EJson::String)
 						{
 							FString ValueStr = It->Value->AsString();
-							if (It->Key == TEXT("key_id"))
-							{
-								UserIdStr = ValueStr;
-							}
 							Attributes.Add(It->Key, ValueStr);
-						}
-						// setup presence booleans
-						if (It->Value.IsValid() && It->Value->Type == EJson::Boolean)
-						{
-							bool ValueBool = It->Value->AsBool();
-							if (It->Key == TEXT("bIsPlayingThisGame"))
-							{
-								UserIsPlayingThisGame = ValueBool;
-							}
-							if (It->Key == TEXT("bIsOnline"))
-							{
-								UserIsOnline = ValueBool;
-							}
-
 						}
 					}
 					// only add if valid id

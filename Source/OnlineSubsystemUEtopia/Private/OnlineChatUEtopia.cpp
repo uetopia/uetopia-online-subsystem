@@ -123,6 +123,9 @@ FOnlineChatUEtopia::FOnlineChatUEtopia(FOnlineSubsystemUEtopia* InSubsystem)
 	//AddOnChatRoomListChangedDelegate_Handle(FOnChatRoomListChangedDelegate::CreateRaw(this, &FOnlineChatUEtopia::OnChatRoomListChangedComplete));
 	//OnChatRoomListChangedDelegate = FOnChatRoomListChangedDelegate::BindUObject( this, FOnlineChatUEtopia::OnChatRoomListChangedComplete);
 
+	// Instead we're going to use a delegate for something other than it's intended purpose.
+	AddOnChatRoomExitDelegate_Handle(FOnChatRoomExitDelegate::CreateRaw(this, &FOnlineChatUEtopia::OnChatRoomExitComplete));
+
 }
 
 FOnlineChatUEtopia::~FOnlineChatUEtopia()
@@ -604,6 +607,13 @@ void FOnlineChatUEtopia::ReadJoinedRooms_HttpRequestComplete(FHttpRequestPtr Htt
 void FOnlineChatUEtopia::OnChatRoomListChangedComplete(const FUniqueNetId& UserId, const FString& Error)
 {
 	UE_LOG(LogOnline, Verbose, TEXT("FOnlineChatUEtopia::OnChatRoomListChangedComplete()"));
+	ReadJoinedRooms(0);
+	return;
+}
+
+void FOnlineChatUEtopia::OnChatRoomExitComplete(const FUniqueNetId& UserId, const FChatRoomId& ChatRoomId, const bool unused, const FString& Error)
+{
+	UE_LOG(LogOnline, Verbose, TEXT("FOnlineChatUEtopia::OnChatRoomExitComplete()"));
 	ReadJoinedRooms(0);
 	return;
 }
