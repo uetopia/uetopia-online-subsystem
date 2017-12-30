@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "OnlineSessionInterfaceUEtopia.h"

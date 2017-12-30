@@ -6,10 +6,10 @@
 	"Description": "Multiplayer tools.",
 	"Category": "Network",
 	"CreatedBy": "UEtopia",
-	"CreatedByURL": "http://ue4topia.appspot.com",
-	"DocsURL": "http://ue4topia.appspot.com/",
+	"CreatedByURL": "https://uetopia.com",
+	"DocsURL": "https://uetopia.com",
 	"MarketplaceURL": "",
-	"SupportURL": "http://ue4topia.appspot.com",
+	"SupportURL": "https://uetopia.comm",
   "Modules": [
     {
       "Name": "OnlineSubsystemUEtopia",
