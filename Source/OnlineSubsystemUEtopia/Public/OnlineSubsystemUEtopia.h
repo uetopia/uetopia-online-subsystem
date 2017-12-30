@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 
 #pragma once
 
@@ -329,7 +329,7 @@ public:
 PACKAGE_SCOPE:
 
 	/** Only the factory makes instances */
-	FOnlineSubsystemUEtopia(FName InInstanceName) 
+	FOnlineSubsystemUEtopia(FName InInstanceName)
 	{}
 
 	/*
@@ -343,7 +343,7 @@ PACKAGE_SCOPE:
 	OnlineAsyncTaskThread(NULL)
 	{}
 	*/
-	
+
 
 private:
 
@@ -387,7 +387,7 @@ private:
 	FOnlineExternalUIInterfaceUEtopiaPtr UEtopiaExternalUI;
 
 	/** Facebook implementation of user interface */
-	// This is apparently not used in the windows platform version?  
+	// This is apparently not used in the windows platform version?
 	// It never gets initialized...  WHy is it there?
 	//FOnlineUserUEtopiaCommonPtr UEtopiaUser;
 
