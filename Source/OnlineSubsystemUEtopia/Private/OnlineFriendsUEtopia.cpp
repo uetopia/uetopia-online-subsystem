@@ -379,7 +379,7 @@ bool FOnlineFriendsUEtopia::QueryRecentPlayers(const FUniqueNetId& UserId, const
 	{
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), LocalUserNum);
 	}
-	
+
 	if (!ErrorStr.IsEmpty())
 	{
 		UE_LOG_ONLINE(Warning, TEXT("ReadFriendsList request failed. %s"), *ErrorStr);
@@ -483,8 +483,8 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 		ResponseStr = HttpResponse->GetContentAsString();
 		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
-			//UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
-			//	*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+			UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
+				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
 
 			// Create the Json parser
 			TSharedPtr<FJsonObject> JsonObject;
@@ -506,31 +506,18 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 					bool UserIsOnline = false;
 					TMap<FString, FString> Attributes;
 					TSharedPtr<FJsonObject> JsonFriendEntry = (*FriendIt)->AsObject();
+
+					JsonFriendEntry->TryGetStringField("keyIdStr", UserIdStr);
+					JsonFriendEntry->TryGetBoolField("bIsPlayingThisGame", UserIsPlayingThisGame);
+					JsonFriendEntry->TryGetBoolField("bIsOnline", UserIsOnline);
+
 					for (TMap<FString, TSharedPtr<FJsonValue > >::TConstIterator It(JsonFriendEntry->Values); It; ++It)
 					{
 						// parse user attributes
 						if (It->Value.IsValid() && It->Value->Type == EJson::String)
 						{
 							FString ValueStr = It->Value->AsString();
-							if (It->Key == TEXT("key_id"))
-							{
-								UserIdStr = ValueStr;
-							}
 							Attributes.Add(It->Key, ValueStr);
-						}
-						// setup presence booleans
-						if (It->Value.IsValid() && It->Value->Type == EJson::Boolean)
-						{
-							bool ValueBool = It->Value->AsBool();
-							if (It->Key == TEXT("bIsPlayingThisGame"))
-							{
-								UserIsPlayingThisGame = ValueBool;
-							}
-							if (It->Key == TEXT("bIsOnline"))
-							{
-								UserIsOnline = ValueBool;
-							}
-
 						}
 					}
 					// only add if valid id
@@ -609,7 +596,7 @@ void FOnlineFriendsUEtopia::QueryRecentPlayers_HttpRequestComplete(FHttpRequestP
 				TArray<TSharedPtr<FJsonValue> > JsonFriends = JsonObject->GetArrayField(TEXT("data"));
 				for (TArray<TSharedPtr<FJsonValue> >::TConstIterator FriendIt(JsonFriends); FriendIt; ++FriendIt)
 				{
-					
+
 					//bool UserIsPlayingThisGame;
 					//bool UserIsOnline;
 					TMap<FString, FString> Attributes;
@@ -632,7 +619,7 @@ void FOnlineFriendsUEtopia::QueryRecentPlayers_HttpRequestComplete(FHttpRequestP
 					// only add if valid id
 					if (!UserIdStr.IsEmpty())
 					{
-						
+
 						TSharedRef<FOnlineRecentPlayerUEtopia> RecentPlayerEntry(new FOnlineRecentPlayerUEtopia(UserIdStr));
 						RecentPlayerEntry->AccountData = Attributes;
 						//RecentPlayerEntry->
@@ -641,8 +628,8 @@ void FOnlineFriendsUEtopia::QueryRecentPlayers_HttpRequestComplete(FHttpRequestP
 						//FriendEntry->Presence.bIsOnline = UserIsOnline;
 						// Add new friend entry to list
 						RecentPlayerList.RecentPlayers.Add(RecentPlayerEntry);
-						
-						
+
+
 					}
 				}
 				bResult = true;
@@ -663,7 +650,7 @@ void FOnlineFriendsUEtopia::QueryRecentPlayers_HttpRequestComplete(FHttpRequestP
 		UE_LOG(LogOnline, Warning, TEXT("Query friends list request failed. %s"), *ErrorStr);
 	}
 
-	
+
 
 	TSharedPtr <const FUniqueNetId> pid = UEtopiaSubsystem->GetIdentityInterface()->GetUniquePlayerId(0);
 
@@ -697,7 +684,7 @@ void FOnlineFriendsUEtopia::UpdateFriend(TSharedRef<FOnlineFriendUEtopia> incomi
 			}
 		}
 	}
-	
+
 }
 
 void FOnlineFriendsUEtopia::AddFriend(TSharedRef<FOnlineFriendUEtopia> incomingFriendData)
