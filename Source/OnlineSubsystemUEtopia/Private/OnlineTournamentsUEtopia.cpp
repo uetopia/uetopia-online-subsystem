@@ -335,7 +335,7 @@ void FOnlineTournamentSystemUEtopia::FetchJoinableTournaments_HttpRequestComplet
 						if (It->Value.IsValid() && It->Value->Type == EJson::String)
 						{
 							FString ValueStr = It->Value->AsString();
-							if (It->Key == TEXT("key_id"))
+							if (It->Key == TEXT("keyIdStr"))
 							{
 								PartyIdStr = ValueStr;
 							}
@@ -444,7 +444,7 @@ bool FOnlineTournamentSystemUEtopia::ReadTournamentDetails(int32 LocalUserNum, c
 	// Set up the request 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
-	RequestJsonObj->SetStringField("key_id", TournamentId.ToString());
+	RequestJsonObj->SetStringField("keyIdStr", TournamentId.ToString());
 
 	FString JsonOutputString;
 	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
@@ -486,7 +486,7 @@ void FOnlineTournamentSystemUEtopia::ReadTournamentDetails_HttpRequestComplete(F
 				// Update our CurrentTournamentDetail
 
 				FString TournamentKeyId = "Unknown";
-				JsonObject->TryGetStringField("key_id", TournamentKeyId );
+				JsonObject->TryGetStringField("keyIdStr", TournamentKeyId );
 				CurrentTournamentDetail->TournamentKeyId = TournamentKeyId;
 
 				FString TournamentTitle = "Loading...";
@@ -642,7 +642,7 @@ bool FOnlineTournamentSystemUEtopia::JoinTournament(int32 LocalUserNum, const FU
 	// Set up the request 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
-	RequestJsonObj->SetStringField("key_id", TournamentId.ToString());
+	RequestJsonObj->SetStringField("keyIdStr", TournamentId.ToString());
 
 	FString JsonOutputString;
 	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
