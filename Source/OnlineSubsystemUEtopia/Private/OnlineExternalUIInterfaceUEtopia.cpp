@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "OnlineExternalUIInterfaceUEtopia.h"
@@ -93,15 +93,15 @@ FLoginFlowResult FOnlineExternalUIUEtopia::OnLoginRedirectURL(const FString& Red
 			}
 
 			// Wait for the RedirectURI to appear
-			if (!RedirectURL.Contains(URLDetails.LoginUrl) && RedirectURL.StartsWith(URLDetails.LoginRedirectUrl) )  
-			//if (!RedirectURL.Contains(URLDetails.LoginUrl) ) 
+			if (!RedirectURL.Contains(URLDetails.LoginUrl) && RedirectURL.StartsWith(URLDetails.LoginRedirectUrl) )
+			//if (!RedirectURL.Contains(URLDetails.LoginUrl) )
 			{
 				TMap<FString, FString> ParamsMap;
 
 				FString ResponseStr = RedirectURL.Mid(URLDetails.LoginRedirectUrl.Len() + 1);
 				{
 					// Remove the "UEtopia fragment"
-					
+
 					FString ParamsOnly;
 					if (!ResponseStr.Split(TEXT("#_=_"), &ParamsOnly, nullptr))
 					{

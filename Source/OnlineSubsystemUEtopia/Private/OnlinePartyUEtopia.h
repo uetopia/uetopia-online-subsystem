@@ -1,3 +1,4 @@
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -30,7 +31,7 @@ private:
 };
 
 /**
-* Info associated with a party join 
+* Info associated with a party join
 */
 class IOnlinePartyJoinInfoUEtopia :
 	public IOnlinePartyJoinInfo
@@ -41,7 +42,7 @@ public:
 	/**
 	* Init/default constructor
 	*/
-	
+
 	IOnlinePartyJoinInfoUEtopia(const FOnlinePartyData& inPartyData, const FString& InUserId, const FString& InPartyId = TEXT(""))
 		: PartyId(new FOnlinePartyIdUEtopia(InPartyId)),
 		PartyData(inPartyData),
@@ -93,7 +94,7 @@ public:
 	, State(EPartyState::None)
 	, Config(MakeShareable(new FPartyConfiguration()))
 	{}
-	
+
 	*/
 
 	/*
@@ -102,7 +103,7 @@ public:
 		: PartyId(InPartyId)
 	*/
 
-	
+
 	//~FOnlinePartyResultUEtopia()
 	//{}
 
@@ -220,7 +221,7 @@ private:
 	void SendInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnSendPartyInvitationComplete Delegate);
 
 	//void JoinParty_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnJoinPartyComplete Delegate);
-	
+
 	void FetchJoinedParties_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 	void RejectInvitation_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 

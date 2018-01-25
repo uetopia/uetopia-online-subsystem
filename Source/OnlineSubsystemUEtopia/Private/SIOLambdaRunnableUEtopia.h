@@ -1,3 +1,5 @@
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
+
 #pragma once
 
 /*
@@ -37,7 +39,7 @@ public:
 
 	/** Makes sure this thread has stopped properly */
 	void EnsureCompletion();
-	
+
 
 	/*
 	Runs the passed lambda on the background thread, new thread per call

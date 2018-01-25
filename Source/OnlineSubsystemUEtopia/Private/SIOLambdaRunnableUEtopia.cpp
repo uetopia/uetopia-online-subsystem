@@ -1,3 +1,4 @@
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 #pragma once
 
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"

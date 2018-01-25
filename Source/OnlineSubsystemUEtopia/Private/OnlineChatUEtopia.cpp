@@ -1,4 +1,4 @@
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2016-2018 UEtopia, LLC. All Rights Reserved.
 
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "OnlineChatUEtopia.h"
@@ -144,7 +144,7 @@ bool FOnlineChatUEtopia::CreateRoom(const FUniqueNetId& UserId, const FChatRoomI
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-		
+
 
 	if (!ErrorStr.IsEmpty())
 	{
@@ -283,7 +283,7 @@ bool FOnlineChatUEtopia::ExitRoom(const FUniqueNetId& UserId, const FChatRoomId&
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("GameKeyId", GameKey);
 	RequestJsonObj->SetStringField("key_id", RoomId);
-	
+
 
 	FString JsonOutputString;
 	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
@@ -458,7 +458,7 @@ bool FOnlineChatUEtopia::ReadJoinedRooms(int32 LocalUserNum)
 	}
 	else
 	{
-		
+
 		AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(LocalUserNum);
 		if (AccessToken.IsEmpty())
 		{
@@ -566,11 +566,11 @@ void FOnlineChatUEtopia::ReadJoinedRooms_HttpRequestComplete(FHttpRequestPtr Htt
 						//FChatRoomId ChatRoomId = chatChannelKeyId;
 						//UE_LOG(LogOnline, Log, TEXT("\t\t ChatRoomId (%s)"), *ChatRoomId);
 						// Fabricate a new FUniqueNetId by the userKeyId
-						
+
 						const TSharedPtr<const FUniqueNetId> OwnerUserId = OnlineSub->GetIdentityInterface()->CreateUniquePlayerId(chatChannelOwnerKeyId);
 						FChatRoomConfig ChatConfig;
 						ChatConfig.bPasswordRequired = false;
-						
+
 						TSharedRef<const FUniqueNetId> OwnerUserIdRef = OwnerUserId.ToSharedRef();
 						TSharedRef<FChatRoomInfoUEtopia> ChatRoomInfoEntry(new FChatRoomInfoUEtopia(chatChannelKeyId, chatChannelTitle, OwnerUserIdRef, ChatConfig));
 
