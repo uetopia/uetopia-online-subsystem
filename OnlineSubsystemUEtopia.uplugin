@@ -2,13 +2,15 @@
 	"FileVersion": 3,
 	"Version": 8,
 	"VersionName": "2.0.0",
-	"FriendlyName": "UEtopia",
+	"FriendlyName": "UETOPIA Online Subsystem",
 	"Description": "Multiplayer tools.",
 	"Category": "Network",
-	"CreatedBy": "UEtopia",
+	"CreatedBy": "UETOPIA",
 	"CreatedByURL": "https://uetopia.com",
 	"DocsURL": "https://uetopia.com/",
-	"MarketplaceURL": "",
+	"MarketplaceURL" : "com.epicgames.launcher://ue/marketplace/content/4954417b921e47acb01d68f2bb493503",
+	"EngineVersion" : "4.18.0",
+	"WhitelistPlatforms": [ "Win64" ],
 	"SupportURL": "https://uetopia.com",
   "Modules": [
     {
