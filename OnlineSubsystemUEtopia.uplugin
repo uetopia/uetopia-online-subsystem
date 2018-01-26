@@ -17,12 +17,7 @@
       "Name": "OnlineSubsystemUEtopia",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault"
-    },
-    {
-			"Name": "SIOJson",
-			"Type": "Runtime",
-			"LoadingPhase": "PreDefault"
-		}
+    }
   ],
 	"Plugins": [
     {

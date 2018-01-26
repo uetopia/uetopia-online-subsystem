@@ -19,6 +19,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
         get { return Path.GetFullPath(Path.Combine(ThirdPartyPath, "Boost")); }
     }
 
+
     public bool LoadLib(ReadOnlyTargetRules Target)
     {
         bool isLibrarySupported = false;
@@ -51,6 +52,9 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "OnlineSubsystemUEtopia/Public",
                     Path.Combine(BoostThirdParty, "Include"),
                     Path.Combine(SocketIOThirdParty, "Include"),
+                    //SIOJsonThirdParty,
+                    Path.Combine(ThirdPartyPath, "SIOJson/Public"),
+                    //"../../ThirdParty/SIOJson/Public",
                     // ... add public include paths required here ...
                     //"Runtime/LoginFlow/Public",
                 }
@@ -59,7 +63,8 @@ public class OnlineSubsystemUEtopia : ModuleRules
         PrivateIncludePaths.AddRange(
                 new string[] {
                 "OnlineSubsystemUEtopia/Private",
-                
+                //"../../ThirdParty/SIOJson/Private",
+                Path.Combine(ThirdPartyPath, "SIOJson/private"),
                     // ... add other private include paths required here ...
                 }
                 );
@@ -70,7 +75,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "Core",
                 "Json",
                 "JsonUtilities",
-                "SIOJson",
+                //"SIOJson",
                 "OnlineSubsystemUtils",
                     // ... add other public dependencies that you statically link with here ...
                 }
