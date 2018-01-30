@@ -1086,8 +1086,8 @@ bool FOnlineSubsystemUEtopia::PostLoginBackendProcess()
 	FString AccessToken = IdentityInterface->GetAuthToken(0);
 
 	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-	FString GameKey = GetGameKey();
-	FString APIURL = GetAPIURL();
+	//FString GameKey = GetGameKey();
+	//FString APIURL = GetAPIURL();
 	FString SessionQueryUrl = "https://ue4topia.appspot.com/_ah/api/users/v1/postLoginProcess";
 
 	if (IsRunningDedicatedServer())

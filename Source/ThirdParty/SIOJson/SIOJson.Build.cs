@@ -11,7 +11,7 @@ namespace UnrealBuildTool.Rules
 		{
 			PrivateIncludePaths.AddRange(
 				new string[] {
-					"SIOJson/Private",
+					"ThirdParty/SIOJson/Private",
 					// ... add other private include paths required here ...
 				});
 
