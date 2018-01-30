@@ -31,6 +31,6 @@
   ],
 	"EnabledByDefault": false,
 	"CanContainContent": false,
-	"IsBetaVersion": false,
+	"IsBetaVersion": true,
 	"Installed": false
 }
