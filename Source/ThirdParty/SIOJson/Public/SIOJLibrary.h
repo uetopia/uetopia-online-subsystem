@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
-
+#include "SIOJsonObject.h"
 #include "SIOJTypes.h"
 #include "SIOJLibrary.generated.h"
 
 class USIOJRequestJSON;
-class USIOJsonObject;
+//class USIOJsonObject; // the plugin compiler tool does not like this forward declaration.  including it instead.
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FSIOJCallDelegate, USIOJRequestJSON*, Request);
 
