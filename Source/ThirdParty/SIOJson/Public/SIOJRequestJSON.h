@@ -6,7 +6,8 @@
 #include "Http.h"
 #include "Map.h"
 #include "Json.h"
-
+#include "LatentActions.h" // required for marketplace
+#include "Engine/LatentActionManager.h" // required for marketplace
 #include "SIOJTypes.h"
 #include "SIOJRequestJSON.generated.h"
 

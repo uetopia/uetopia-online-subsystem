@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Object.h"
+#include "SIOJsonValue.h"
 #include "SIOJConvert.generated.h"
 
 struct FTrimmedKeyMap

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "JsonObject.h"
+#include "JsonValue.h"
 #include "SIOJsonObject.generated.h"
 
 class USIOJsonValue;

@@ -1012,7 +1012,7 @@ void FOnlineSubsystemUEtopia::EmitNative(const FString& EventName, const TShared
 	{
 		TArray<TSharedPtr<FJsonValue>> ValueArray;
 
-		for (int i = 0; i < MessageList.size(); i++)
+		for (size_t i = 0; i < MessageList.size(); i++)
 		{
 			auto ItemMessagePtr = MessageList[i];
 			ValueArray.Add(USIOMessageConvertUEtopia::ToJsonValue(ItemMessagePtr));
