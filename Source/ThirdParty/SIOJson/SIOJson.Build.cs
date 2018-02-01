@@ -9,7 +9,9 @@ namespace UnrealBuildTool.Rules
 		//public SIOJson(TargetInfo Target)
     public SIOJson(ReadOnlyTargetRules Target) : base(Target)
 		{
-			PrivateIncludePaths.AddRange(
+            PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+            PrivateIncludePaths.AddRange(
 				new string[] {
 					"ThirdParty/SIOJson/Private",
 					// ... add other private include paths required here ...
