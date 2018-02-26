@@ -32,6 +32,7 @@ bool FUserOnlineAccountUEtopia::GetUserAttribute(const FString& AttrName, FStrin
 bool FUserOnlineAccountUEtopia::SetAccessToken(FString& InAceessToken)
 {
 	AuthTicket = InAceessToken;
+
 	return true;
 }
 
@@ -252,6 +253,8 @@ void FOnlineIdentityUEtopia::TickRefreshToken(float DeltaTime)
 
 				bool requestsuccess = HttpRequest->ProcessRequest();
 
+				
+
 
 			}
 
@@ -308,6 +311,10 @@ void FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete(FHttpRequestPtr Ht
 							// reset the timer
 							RefreshTokenLastCheckElapsedTime = 0.0f;
 							RefreshTokenTotalCheckElapsedTime = 0.0f;
+
+							// Trigger the delegate so we update the token on the player character
+							TSharedPtr < const FUniqueNetId > UniqueId = GetUniquePlayerId(0);
+							TriggerOnLoginStatusChangedDelegates(0, ELoginStatus::LoggedIn, ELoginStatus::LoggedIn, *UniqueId);
 						}
 					}
 				}
@@ -378,6 +385,10 @@ void FOnlineIdentityUEtopia::OnExternalUILoginComplete(TSharedPtr<const FUniqueN
 	FString ErrorStr;
 	bool bWasSuccessful = UniqueId.IsValid() && UniqueId->IsValid();
 	OnAccessTokenLoginComplete(ControllerIndex, bWasSuccessful, bWasSuccessful ? *UniqueId : GetEmptyUniqueId(), ErrorStr);
+
+	// Trigger the delegate so we update the token on the player character
+	//TSharedPtr < const FUniqueNetId > UniqueId = GetUniquePlayerId(0);
+	TriggerOnLoginStatusChangedDelegates(0, ELoginStatus::LoggedIn, ELoginStatus::LoggedIn, *UniqueId);
 }
 
 void FOnlineIdentityUEtopia::RequestElevatedPermissions(int32 LocalUserNum, const TArray<FSharingPermission>& AddlPermissions, const FOnLoginCompleteDelegate& InCompletionDelegate)
@@ -668,6 +679,7 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsys
 	RefreshTokenLastCheckElapsedTime = 0.0f;
 	RefreshTokenTotalCheckElapsedTime = 0.0f;
 	RefreshTokenMaxCheckElapsedTime = 15.0f * 60.0f; // 15 minutes
+	//RefreshTokenMaxCheckElapsedTime = 1.0f * 60.0f; // 1 minutes - just for testing purposes
 	bIsLoggedIn = false;
 }
 
