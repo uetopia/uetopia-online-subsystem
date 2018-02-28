@@ -44,7 +44,7 @@ void FOnlineSessionInfoUEtopia::Init(const FOnlineSubsystemUEtopia& Subsystem)
 	FGuid OwnerGuid;
 	FPlatformMisc::CreateGuid(OwnerGuid);
 	SessionId = FUniqueNetIdString(OwnerGuid.ToString());
-	
+
 
 
 }
@@ -491,13 +491,13 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
 	RequestJsonObj->SetStringField("encryption", encryption);
 	// We need to get some of our custom data out of the settings
-	// This just uses the first player.  
+	// This just uses the first player.
 	// TODO accept more than one.
 	RequestJsonObj->SetStringField("userid", LocalPlayers[0]->ToString());
 	FString matchType;
@@ -527,6 +527,15 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	Request->SetContentAsString(JsonOutputString);
 
 	// Copy the search pointer so we can keep it around
@@ -537,7 +546,7 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	if (!Request->ProcessRequest()) { return false; }
 
 	//UE_LOG(LogOnline, Warning, TEXT("StartMatchmaking is not supported on this platform. Use FindSessions or FindSessionById."));
-	
+
 	return false;
 
 	//FPendingSessionQuery
@@ -629,7 +638,7 @@ bool FOnlineSessionUEtopia::CancelMatchmaking(const FUniqueNetId& SearchingPlaye
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
@@ -656,6 +665,15 @@ bool FOnlineSessionUEtopia::CancelMatchmaking(const FUniqueNetId& SearchingPlaye
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	Request->SetContentAsString(JsonOutputString);
 
 	bCheckMatchmaker = false;
@@ -731,12 +749,12 @@ void FOnlineSessionUEtopia::CheckMatchmaking()
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
 	RequestJsonObj->SetStringField("encryption", encryption);
-	
+
 	RequestJsonObj->SetStringField("userid", UEtopiaSubsystem->GetIdentityInterface()->GetUniquePlayerId(0)->ToString());
 
 	FString JsonOutputString;
@@ -759,6 +777,15 @@ void FOnlineSessionUEtopia::CheckMatchmaking()
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+	
 	Request->SetContentAsString(JsonOutputString);
 
 
@@ -800,18 +827,18 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete JSON valid"));
 
-				//  check the matchmakerJoinable bool to make sure we can actually join.  
+				//  check the matchmakerJoinable bool to make sure we can actually join.
 				if (MatchmakerJoinable) {
 					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete MatchmakerJoinable"));
 					bResult = true;
-					
+
 					// CREATE THE SERVER SEARCH RESULTS RECORD, AND STICK OUR NEW SERVER INTO IT
 					// THis is a dupe from findsessionscomplete
 
-					
+
 
 					// Empty out the search results
-					// this is causing a read access violation. 
+					// this is causing a read access violation.
 
 					//CurrentSessionSearch = MakeShareable(new FOnlineSessionSearch());
 					//SessionSearch->SearchResults.Empty();
@@ -819,7 +846,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Adding a session for this server "));
 
 					// Set up the data we need out of json
-					//FString session_host_address = Attributes["session_host_address"];  
+					//FString session_host_address = Attributes["session_host_address"];
 					FString split_delimiter = ":";
 					FString IPAddress = TEXT("");
 					FString Port = TEXT("");
@@ -859,7 +886,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					//NewSession->SessionSettings.Set(key, Attributes["title"]);
 					// TODO add any other custom match settings we care about.
 
-						
+
 
 
 
@@ -869,7 +896,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					bCheckMatchmaker = false;
 				}
 
-				
+
 			}
 		}
 		else
@@ -917,7 +944,7 @@ bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TShared
 		FString UserKeyId = "";
 		SearchSettings->QuerySettings.Get(KeyUserKeyId, UserKeyId);
 		OnlineReturn = FindOnlineSession(UserKeyId);
-		
+
 
 		// Check if its a LAN query
 		//Return = FindLANSession();
@@ -974,6 +1001,15 @@ uint32 FOnlineSessionUEtopia::FindOnlineSession(FString UserKeyId)
 	HttpRequest->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetVerb(TEXT("GET"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	bool requestSuccess = HttpRequest->ProcessRequest();
 
 	//FPendingSessionQuery
@@ -1528,7 +1564,7 @@ bool FOnlineSessionUEtopia::RegisterPlayers(FName SessionName, const TArray< TSh
 	if (IsRunningDedicatedServer())
 	{
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players - RUNNING ON DEDICATED"));
-		
+
 		FNamedOnlineSession* Session = GetNamedSession(SessionName);
 		if (Session)
 		{
