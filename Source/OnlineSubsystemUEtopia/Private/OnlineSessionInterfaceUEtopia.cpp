@@ -516,6 +516,8 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking RUNNING ON DEDICATED SERVER!"));
 	}
 
+	
+
 	FHttpModule* Http = &FHttpModule::Get();
 	if (!Http) { return false; }
 	if (!Http->IsHttpEnabled()) { return false; }
@@ -527,6 +529,15 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	Request->SetContentAsString(JsonOutputString);
 
 	// Copy the search pointer so we can keep it around
@@ -652,6 +663,15 @@ bool FOnlineSessionUEtopia::CancelMatchmaking(const FUniqueNetId& SearchingPlaye
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	Request->SetContentAsString(JsonOutputString);
 
 	bCheckMatchmaker = false;
@@ -755,6 +775,15 @@ void FOnlineSessionUEtopia::CheckMatchmaking()
 	Request->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
 	//Request->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		Request->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	Request->SetContentAsString(JsonOutputString);
 
 
@@ -970,6 +999,15 @@ uint32 FOnlineSessionUEtopia::FindOnlineSession(FString UserKeyId)
 	HttpRequest->SetHeader("Content-Type", "application/x-www-form-urlencoded");
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetVerb(TEXT("GET"));
+
+	// We need the player's access token, which exists inside OnlineIdentity.
+	FString AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (!AccessToken.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] AccessToken: %s "), *AccessToken);
+		HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	}
+
 	bool requestSuccess = HttpRequest->ProcessRequest();
 
 	//FPendingSessionQuery
