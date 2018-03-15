@@ -439,6 +439,11 @@ bool FOnlineChatUEtopia::GetLastMessages(const FUniqueNetId& UserId, const FChat
 	return false;
 }
 
+bool FOnlineChatUEtopia::IsMessageFromLocalUser(const FUniqueNetId& UserId, const FChatMessage& Message, const bool bIncludeExternalInstances)
+{
+	return false;
+}
+
 void FOnlineChatUEtopia::DumpChatState() const
 {
 	return;

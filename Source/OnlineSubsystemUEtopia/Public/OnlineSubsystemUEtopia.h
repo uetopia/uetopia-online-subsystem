@@ -132,7 +132,7 @@ public:
 	 * Is the UEtopia API available for use
 	 * @return true if UEtopia functionality is available, false otherwise
 	 */
-	bool IsEnabled();
+	virtual bool IsEnabled() const override;
 
 	// SocketIO stuff
 	//Async events

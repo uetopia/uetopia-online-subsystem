@@ -254,6 +254,12 @@ bool FOnlineSubsystemUEtopia::Init()
 	return bUEtopiaInit;
 }
 
+bool FOnlineSubsystemUEtopia::IsEnabled() const
+{
+
+	return true;
+}
+
 bool FOnlineSubsystemUEtopia::Shutdown()
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Shutdown()"));
@@ -322,11 +328,6 @@ FString FOnlineSubsystemUEtopia::GetAppId() const
 bool FOnlineSubsystemUEtopia::Exec(UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar)
 {
 	return false;
-}
-
-bool FOnlineSubsystemUEtopia::IsEnabled()
-{
-	return true;
 }
 
 FString FOnlineSubsystemUEtopia::GetAPIURL()
