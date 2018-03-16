@@ -321,7 +321,7 @@ bool FOnlineSubsystemUEtopia::Exec(UWorld* InWorld, const TCHAR* Cmd, FOutputDev
 	return false;
 }
 
-bool FOnlineSubsystemUEtopia::IsEnabled()
+bool FOnlineSubsystemUEtopia::IsEnabled() const
 {
 	return true;
 }

@@ -440,6 +440,10 @@ void FOnlineChatUEtopia::DumpChatState() const
 	return;
 }
 
+bool FOnlineChatUEtopia::IsMessageFromLocalUser(const FUniqueNetId& UserId, const FChatMessage& Message, const bool bIncludeExternalInstances)
+{
+	return false;
+}
 
 bool FOnlineChatUEtopia::ReadJoinedRooms(int32 LocalUserNum)
 {
