@@ -40,7 +40,7 @@ private:
 
 	/* Matchmaker Start endpoint http complete */
 	void StartMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-	
+
 	/* Matchmaker Cancel endpoint http complete */
 	void CancelMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
@@ -53,7 +53,7 @@ private:
 	/* Matchmaker Cancel endpoint http complete */
 	void CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
-	
+
 
 
 	// not sure if we need this yet...  looking at the facebook subsystem....
@@ -263,6 +263,12 @@ public:
 
 	virtual ~FOnlineSessionUEtopia() {}
 	//FOnlineSessionUEtopia();
+
+	// Added in 4.20
+	TSharedPtr<const FUniqueNetId> CreateSessionIdFromString(const FString& SessionIdStr) override
+	{
+		return nullptr;
+	}
 
 	FNamedOnlineSession* GetNamedSession(FName SessionName) override
 	{

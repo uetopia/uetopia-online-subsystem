@@ -44,7 +44,7 @@ void FOnlineSessionInfoUEtopia::Init(const FOnlineSubsystemUEtopia& Subsystem)
 	FGuid OwnerGuid;
 	FPlatformMisc::CreateGuid(OwnerGuid);
 	SessionId = FUniqueNetIdString(OwnerGuid.ToString());
-	
+
 
 
 }
@@ -74,7 +74,8 @@ public:
 	*/
 	virtual FString ToString() const override
 	{
-		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		// this is causing an error on 4.20 - muting it for now
+		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
 	}
 
 	/**
@@ -139,7 +140,8 @@ public:
 	*/
 	virtual FString ToString() const override
 	{
-		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		// this is causing an error on 4.20 - muting it for now
+		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
 	}
 
 	/**
@@ -491,13 +493,13 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
 	RequestJsonObj->SetStringField("encryption", encryption);
 	// We need to get some of our custom data out of the settings
-	// This just uses the first player.  
+	// This just uses the first player.
 	// TODO accept more than one.
 	RequestJsonObj->SetStringField("userid", LocalPlayers[0]->ToString());
 	FString matchType;
@@ -516,7 +518,7 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking RUNNING ON DEDICATED SERVER!"));
 	}
 
-	
+
 
 	FHttpModule* Http = &FHttpModule::Get();
 	if (!Http) { return false; }
@@ -548,7 +550,7 @@ bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUni
 	if (!Request->ProcessRequest()) { return false; }
 
 	//UE_LOG(LogOnline, Warning, TEXT("StartMatchmaking is not supported on this platform. Use FindSessions or FindSessionById."));
-	
+
 	return false;
 
 	//FPendingSessionQuery
@@ -636,7 +638,7 @@ bool FOnlineSessionUEtopia::CancelMatchmaking(const FUniqueNetId& SearchingPlaye
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
@@ -747,12 +749,12 @@ void FOnlineSessionUEtopia::CheckMatchmaking()
 	UE_LOG(LogTemp, Log, TEXT("GameKey: %s"), *GameKey);
 
 	FString nonceString = "10951350917635";
-	FString encryption = "off";  // Allowing unencrypted on sandbox for now.  
+	FString encryption = "off";  // Allowing unencrypted on sandbox for now.
 
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("nonce", "nonceString");
 	RequestJsonObj->SetStringField("encryption", encryption);
-	
+
 	RequestJsonObj->SetStringField("userid", UEtopiaSubsystem->GetIdentityInterface()->GetUniquePlayerId(0)->ToString());
 
 	FString JsonOutputString;
@@ -825,18 +827,18 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 
 				UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete JSON valid"));
 
-				//  check the matchmakerJoinable bool to make sure we can actually join.  
+				//  check the matchmakerJoinable bool to make sure we can actually join.
 				if (MatchmakerJoinable) {
 					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete MatchmakerJoinable"));
 					bResult = true;
-					
+
 					// CREATE THE SERVER SEARCH RESULTS RECORD, AND STICK OUR NEW SERVER INTO IT
 					// THis is a dupe from findsessionscomplete
 
-					
+
 
 					// Empty out the search results
-					// this is causing a read access violation. 
+					// this is causing a read access violation.
 
 					//CurrentSessionSearch = MakeShareable(new FOnlineSessionSearch());
 					//SessionSearch->SearchResults.Empty();
@@ -844,7 +846,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession_HttpRequestComplete Adding a session for this server "));
 
 					// Set up the data we need out of json
-					//FString session_host_address = Attributes["session_host_address"];  
+					//FString session_host_address = Attributes["session_host_address"];
 					FString split_delimiter = ":";
 					FString IPAddress = TEXT("");
 					FString Port = TEXT("");
@@ -884,7 +886,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					//NewSession->SessionSettings.Set(key, Attributes["title"]);
 					// TODO add any other custom match settings we care about.
 
-						
+
 
 
 
@@ -894,7 +896,7 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 					bCheckMatchmaker = false;
 				}
 
-				
+
 			}
 		}
 		else
@@ -942,7 +944,7 @@ bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TShared
 		FString UserKeyId = "";
 		SearchSettings->QuerySettings.Get(KeyUserKeyId, UserKeyId);
 		OnlineReturn = FindOnlineSession(UserKeyId);
-		
+
 
 		// Check if its a LAN query
 		//Return = FindLANSession();
@@ -1562,7 +1564,7 @@ bool FOnlineSessionUEtopia::RegisterPlayers(FName SessionName, const TArray< TSh
 	if (IsRunningDedicatedServer())
 	{
 		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Players - RUNNING ON DEDICATED"));
-		
+
 		FNamedOnlineSession* Session = GetNamedSession(SessionName);
 		if (Session)
 		{

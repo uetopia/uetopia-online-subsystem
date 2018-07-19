@@ -74,6 +74,8 @@ const FOnlinePartyTypeId IOnlinePartyJoinInfoUEtopia::GetPartyTypeId() const
 {
 	return PartyTypeId;
 }
+
+/* Removed in 4.20
 const TSharedRef<const FUniqueNetId>& IOnlinePartyJoinInfoUEtopia::GetLeaderId() const
 {
 	return LeaderId;
@@ -82,6 +84,18 @@ const FString& IOnlinePartyJoinInfoUEtopia::GetLeaderDisplayName() const
 {
 	return genericString;
 }
+const FOnlinePartyData& IOnlinePartyJoinInfoUEtopia::GetClientData() const
+{
+	return PartyData;
+}
+*/
+
+// Added in 4.20
+const FString& IOnlinePartyJoinInfoUEtopia::GetSourcePlatform() const
+{
+ 	return genericString;
+}
+
 const TSharedRef<const FUniqueNetId>& IOnlinePartyJoinInfoUEtopia::GetSourceUserId() const
 {
 	return LeaderId;
@@ -118,10 +132,7 @@ const FString& IOnlinePartyJoinInfoUEtopia::GetBuildId() const
 {
 	return genericString;
 }
-const FOnlinePartyData& IOnlinePartyJoinInfoUEtopia::GetClientData() const
-{
-	return PartyData;
-}
+
 bool IOnlinePartyJoinInfoUEtopia::CanJoin() const
 {
 	return false;
@@ -440,7 +451,9 @@ void FOnlinePartyUEtopia::RespondToQueryJoinability(const FUniqueNetId& LocalUse
 	return;
 }
 
-bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData /*= FOnlinePartyData()*/, const FOnSendPartyInvitationComplete& Delegate /*= FOnSendPartyInvitationComplete()*/)
+//changed in 4.20
+//bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData /*= FOnlinePartyData()*/, const FOnSendPartyInvitationComplete& Delegate /*= FOnSendPartyInvitationComplete()*/)
+bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnSendPartyInvitationComplete& Delegate /*= FOnSendPartyInvitationComplete() */)
 {
 	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
 	//return false;
