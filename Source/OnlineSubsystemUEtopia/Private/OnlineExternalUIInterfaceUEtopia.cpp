@@ -51,11 +51,16 @@ bool FOnlineExternalUIUEtopia::ShowLoginUI(const int ControllerIndex, bool bShow
 		UE_LOG_ONLINE(Display, TEXT("FOnlineExternalUIUEtopia::ShowLoginUI !bStarted"));
 		UEtopiaSubsystem->ExecuteNextTick([ControllerIndex, Delegate]()
 		{
-			Delegate.ExecuteIfBound(nullptr, ControllerIndex);
+			Delegate.ExecuteIfBound(nullptr, ControllerIndex, FOnlineError(FString(TEXT("!bStarted"))));
 		});
 	}
 
 	return bStarted;
+}
+
+bool FOnlineExternalUIUEtopia::ShowAccountCreationUI(const int ControllerIndex, const FOnAccountCreationUIClosedDelegate& Delegate /*= FOnAccountCreationUIClosedDelegate() */)
+{
+	return false;
 }
 
 FLoginFlowResult FOnlineExternalUIUEtopia::ParseRedirectResult(const FUEtopiaLoginURL& URLDetails, const FString& RedirectURL)
@@ -188,7 +193,7 @@ void FOnlineExternalUIUEtopia::OnExternalLoginFlowComplete(const FLoginFlowResul
 	{
 		UEtopiaSubsystem->ExecuteNextTick([ControllerIndex, Delegate]()
 		{
-			Delegate.ExecuteIfBound(nullptr, ControllerIndex);
+			Delegate.ExecuteIfBound(nullptr, ControllerIndex, FOnlineError());
 		});
 	}
 }
@@ -198,6 +203,6 @@ void FOnlineExternalUIUEtopia::OnAccessTokenLoginComplete(int32 LocalUserNum, bo
 	TSharedPtr<const FUniqueNetId> StrongUserId = UserId.AsShared();
 	UEtopiaSubsystem->ExecuteNextTick([StrongUserId, LocalUserNum, Delegate]()
 	{
-		Delegate.ExecuteIfBound(StrongUserId, LocalUserNum);
+		Delegate.ExecuteIfBound(StrongUserId, LocalUserNum, FOnlineError());
 	});
 }

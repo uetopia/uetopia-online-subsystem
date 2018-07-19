@@ -53,8 +53,15 @@ public:
 	bool IsValid() const override;
 	const TSharedRef<const FOnlinePartyId>& GetPartyId() const override;
 	const FOnlinePartyTypeId GetPartyTypeId() const override;
-	const TSharedRef<const FUniqueNetId>& GetLeaderId() const override;
-	const FString& GetLeaderDisplayName() const override;
+
+	// Removed in 4.20
+	//const TSharedRef<const FUniqueNetId>& GetLeaderId() const override;
+	//const FString& GetLeaderDisplayName() const override;
+	//const FOnlinePartyData& GetClientData() const override;
+
+	// Added in 4.20
+	virtual const FString& GetSourcePlatform() const override;
+
 	const TSharedRef<const FUniqueNetId>& GetSourceUserId() const override;
 	const FString& GetSourceDisplayName() const override;
 	bool HasKey() const override;
@@ -64,7 +71,7 @@ public:
 	int32 GetNotAcceptingReason() const override;
 	const FString& GetAppId() const override;
 	const FString& GetBuildId() const override;
-	const FOnlinePartyData& GetClientData() const override;
+	
 	bool CanJoin() const override;
 	bool CanJoinWithPassword() const override;
 	bool CanRequestAnInvite() const override;
@@ -155,7 +162,13 @@ public:
 	virtual bool LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnLeavePartyComplete& Delegate = FOnLeavePartyComplete()) override;
 	virtual bool ApproveJoinRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode = 0) override;
 	virtual void RespondToQueryJoinability(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bCanJoin, int32 DeniedResultCode = 0) override;
-	virtual bool SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData = FOnlinePartyData(), const FOnSendPartyInvitationComplete& Delegate = FOnSendPartyInvitationComplete()) override;
+	
+	
+	// changed in 4.20 
+	// virtual bool SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData = FOnlinePartyData(), const FOnSendPartyInvitationComplete& Delegate = FOnSendPartyInvitationComplete()) override;
+	virtual bool SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnSendPartyInvitationComplete& Delegate = FOnSendPartyInvitationComplete()) override;
+
+
 	virtual bool AcceptInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId) override;
 	virtual bool RejectInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId) override;
 	virtual void ClearInvitations(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId, const FOnlinePartyId* PartyId = nullptr) override;

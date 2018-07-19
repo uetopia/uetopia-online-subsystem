@@ -10,7 +10,7 @@ bool FOnlineExternalUIUEtopiaCommon::ShowLoginUI(const int ControllerIndex, bool
 
 	UEtopiaSubsystem->ExecuteNextTick([ControllerIndex, Delegate]()
 	{
-		Delegate.ExecuteIfBound(nullptr, ControllerIndex);
+		Delegate.ExecuteIfBound(nullptr, ControllerIndex, FOnlineError());
 	});
 
 	return bStarted;

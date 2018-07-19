@@ -380,7 +380,7 @@ void FOnlineIdentityUEtopia::OnRequestCurrentPermissionsComplete(int32 LocalUser
 }
 
 
-void FOnlineIdentityUEtopia::OnExternalUILoginComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex)
+void FOnlineIdentityUEtopia::OnExternalUILoginComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, const FOnlineError& /*Error*/)
 {
 	FString ErrorStr;
 	bool bWasSuccessful = UniqueId.IsValid() && UniqueId->IsValid();
@@ -439,7 +439,7 @@ void FOnlineIdentityUEtopia::RequestElevatedPermissions(int32 LocalUserNum, cons
 					bHasLoginOutstanding = true;
 					LoginURLDetails.NewScopeFields = NewPerms;
 					LoginURLDetails.RerequestScopeFields = RerequestPerms;
-					FOnLoginUIClosedDelegate CompletionDelegate = FOnLoginUIClosedDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete, InCompletionDelegate);
+					FOnLoginUIClosedDelegate CompletionDelegate = FOnLoginUIClosedDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete);
 					OnlineExternalUI->ShowLoginUI(LocalUserNum, true, true, CompletionDelegate);
 				}
 				else
@@ -464,7 +464,7 @@ void FOnlineIdentityUEtopia::RequestElevatedPermissions(int32 LocalUserNum, cons
 	}
 }
 
-void FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, FOnLoginCompleteDelegate InCompletionDelegate)
+void FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, const FOnlineError& /*Error*/)
 {
 	FString ErrorStr;
 	bool bWasSuccessful = UniqueId.IsValid() && UniqueId->IsValid();
@@ -477,7 +477,7 @@ void FOnlineIdentityUEtopia::OnExternalUIElevatedPermissionsComplete(TSharedPtr<
 
 	UE_LOG(LogOnline, Verbose, TEXT("RequestElevatedPermissions() %s"), bWasSuccessful ? TEXT("success") : TEXT("failed"));
 	TSharedPtr<const FUniqueNetId> ExistingUserId = GetUniquePlayerId(ControllerIndex);
-	InCompletionDelegate.ExecuteIfBound(ControllerIndex, bWasSuccessful, ExistingUserId.IsValid() ? *ExistingUserId : GetEmptyUniqueId(), ErrorStr);
+	//InCompletionDelegate.ExecuteIfBound(ControllerIndex, bWasSuccessful, ExistingUserId.IsValid() ? *ExistingUserId : GetEmptyUniqueId(), ErrorStr);
 }
 
 

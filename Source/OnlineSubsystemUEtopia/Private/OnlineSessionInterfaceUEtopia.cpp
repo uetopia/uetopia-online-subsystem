@@ -74,7 +74,8 @@ public:
 	*/
 	virtual FString ToString() const override
 	{
-		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		// this is causing an error on 4.20 - muting it for now
+		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
 	}
 
 	/**
@@ -139,7 +140,8 @@ public:
 	*/
 	virtual FString ToString() const override
 	{
-		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		// this is causing errors in 4.20 - muting it for now
+		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
 	}
 
 	/**

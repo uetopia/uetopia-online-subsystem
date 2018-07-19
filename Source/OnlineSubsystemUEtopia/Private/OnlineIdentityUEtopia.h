@@ -400,12 +400,14 @@ private:
 	/**
 	* Delegate fired when the call to ShowLoginUI completes
 	*/
-	void OnExternalUILoginComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex);
+	void OnExternalUILoginComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, const FOnlineError& /*Error*/);
 
 	/**
 	* Delegate fired when the call to ShowLoginUI completes for requesting elevated permissions
 	*/
-	void OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, FOnLoginCompleteDelegate InCompletionDelegate);
+	// changed in 4.20
+	// void OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, FOnLoginCompleteDelegate InCompletionDelegate);
+	void OnExternalUIElevatedPermissionsComplete(TSharedPtr<const FUniqueNetId> UniqueId, const int ControllerIndex, const FOnlineError& /*Error*/);
 
 	/**
 	* Delegate called when current permission request completes
