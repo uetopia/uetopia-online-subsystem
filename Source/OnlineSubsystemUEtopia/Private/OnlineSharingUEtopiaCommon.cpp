@@ -130,10 +130,10 @@ bool FUEtopiaPermissions::HasPermission(EOnlineSharingCategory RequestedPermissi
 FOnlineSharingUEtopiaCommon::FOnlineSharingUEtopiaCommon(FOnlineSubsystemUEtopia* InSubsystem)
 	: Subsystem(InSubsystem)
 {
-	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineSharingUEtopia"), TEXT("PermissionsURL"), PermissionsURL, GEngineIni))
-	{
-		UE_LOG(LogOnline, Warning, TEXT("Missing PermissionsURL= in [OnlineSubsystemUEtopia.OnlineSharingUEtopia] of DefaultEngine.ini"));
-	}
+	//if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineSharingUEtopia"), TEXT("PermissionsURL"), PermissionsURL, GEngineIni))
+	//{
+	//	UE_LOG(LogOnline, Warning, TEXT("Missing PermissionsURL= in [OnlineSubsystemUEtopia.OnlineSharingUEtopia] of DefaultEngine.ini"));
+	//}
 
 	CurrentPermissions.Setup();
 

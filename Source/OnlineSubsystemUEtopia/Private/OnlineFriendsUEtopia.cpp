@@ -81,10 +81,10 @@ FOnlineFriendsUEtopia::FOnlineFriendsUEtopia(FOnlineSubsystemUEtopia* InSubsyste
 {
 	check(UEtopiaSubsystem);
 
-	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineFriendsUEtopia"), TEXT("FriendsUrl"), FriendsUrl, GEngineIni))
-	{
-		UE_LOG(LogOnline, Warning, TEXT("Missing FriendsUrl= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
-	}
+	//if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineFriendsUEtopia"), TEXT("FriendsUrl"), FriendsUrl, GEngineIni))
+	//{
+	//	UE_LOG(LogOnline, Warning, TEXT("Missing FriendsUrl= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
+	//}
 	GConfig->GetArray(TEXT("OnlineSubsystemUEtopia.OnlineFriendsUEtopia"), TEXT("FriendsFields"), FriendsFields, GEngineIni);
 
 	// always required fields
@@ -483,8 +483,8 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 		ResponseStr = HttpResponse->GetContentAsString();
 		if (EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		{
-			UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
-				*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
+			//UE_LOG(LogOnline, Verbose, TEXT("Query friends request complete. url=%s code=%d response=%s"),
+			//	*HttpRequest->GetURL(), HttpResponse->GetResponseCode(), *ResponseStr);
 
 			// Create the Json parser
 			TSharedPtr<FJsonObject> JsonObject;
@@ -496,6 +496,8 @@ void FOnlineFriendsUEtopia::QueryFriendsList_HttpRequestComplete(FHttpRequestPtr
 				// Update cached entry for local user
 				FOnlineFriendsList& FriendsList = FriendsMap.FindOrAdd(PendingFriendsQuery.LocalUserNum);
 				FriendsList.Friends.Empty();
+
+				// TODO paging?
 
 				// Should have an array of id mappings
 				TArray<TSharedPtr<FJsonValue> > JsonFriends = JsonObject->GetArrayField(TEXT("data"));
@@ -601,16 +603,15 @@ void FOnlineFriendsUEtopia::QueryRecentPlayers_HttpRequestComplete(FHttpRequestP
 					//bool UserIsOnline;
 					TMap<FString, FString> Attributes;
 					TSharedPtr<FJsonObject> JsonFriendEntry = (*FriendIt)->AsObject();
+
+					JsonFriendEntry->TryGetStringField("keyIdStr", UserIdStr);
+
 					for (TMap<FString, TSharedPtr<FJsonValue > >::TConstIterator It(JsonFriendEntry->Values); It; ++It)
 					{
 						// parse user attributes
 						if (It->Value.IsValid() && It->Value->Type == EJson::String)
 						{
 							FString ValueStr = It->Value->AsString();
-							if (It->Key == TEXT("key_id"))
-							{
-								UserIdStr = ValueStr;
-							}
 							Attributes.Add(It->Key, ValueStr);
 						}
 						// setup presence booleans

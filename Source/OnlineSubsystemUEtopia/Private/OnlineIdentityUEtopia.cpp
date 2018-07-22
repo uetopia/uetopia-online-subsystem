@@ -3,6 +3,7 @@
 #include "OnlineSubsystemUEtopiaPrivatePCH.h"
 #include "OnlineIdentityUEtopia.h"
 #include "OnlineExternalUIUEtopiaCommon.h"
+#include "OnlineSubsystemUEtopiaTypes.h"
 #include "IPAddress.h"
 #include "SocketSubsystem.h"
 //#include "LoginFlowManager.h"
@@ -569,14 +570,14 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityUEtopia::CreateUniquePlayerId(uint
 	if (Bytes != NULL && Size > 0)
 	{
 		FString StrId(Size, (TCHAR*)Bytes);
-		return MakeShareable(new FUniqueNetIdString(StrId));
+		return MakeShareable(new FUniqueNetIdUetopia(StrId));
 	}
 	return NULL;
 }
 
 TSharedPtr<const FUniqueNetId> FOnlineIdentityUEtopia::CreateUniquePlayerId(const FString& Str)
 {
-	return MakeShareable(new FUniqueNetIdString(Str));
+	return MakeShareable(new FUniqueNetIdUetopia(Str));
 }
 
 ELoginStatus::Type FOnlineIdentityUEtopia::GetLoginStatus(int32 LocalUserNum) const
@@ -664,12 +665,12 @@ FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsys
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing ClientId= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 	}
-	if (!GConfig->GetFloat(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginTimeout"), MaxCheckElapsedTime, GEngineIni))
-	{
-		UE_LOG(LogOnline, Warning, TEXT("Missing LoginTimeout= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
+	//if (!GConfig->GetFloat(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginTimeout"), MaxCheckElapsedTime, GEngineIni))
+	//{
+	//	UE_LOG(LogOnline, Warning, TEXT("Missing LoginTimeout= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
 		// Default to 30 seconds
 		MaxCheckElapsedTime = 30.f;
-	}
+	//}
 	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("MeURL"), MeURL, GEngineIni))
 	{
 		UE_LOG(LogOnline, Warning, TEXT("Missing MeURL= in [OnlineSubsystemUEtopia.OnlineIdentityUEtopia] of DefaultEngine.ini"));
@@ -723,7 +724,7 @@ FPlatformUserId FOnlineIdentityUEtopia::GetPlatformUserIdFromUniqueNetId(const F
 
 FString FOnlineIdentityUEtopia::GetAuthType() const
 {
-	return TEXT("");
+	return AUTH_TYPE_UETOPIA;
 }
 
 void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate)
@@ -753,9 +754,16 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 				{
 					// copy and construct the unique id
 					TSharedRef<FUserOnlineAccountUEtopia> UserRef(new FUserOnlineAccountUEtopia(User));
-					UserRef->UserIdPtr = MakeShareable(new FUniqueNetIdString(User.UserId));
+
+					// This changed in 4.20 - we need to pass the "Type" now for some odd reason.
+					// If the type is not passed, it gets set to "UNSET" which results in failures
+					// trying to look up the subsystem based on this type.
+					UserRef->UserIdPtr = MakeShareable(new FUniqueNetIdString(User.UserId, TEXT("UEtopia")));
+
 					// update the access token
 					UserRef->AuthTicket = PendingRegisterUser.AccessToken;
+
+
 					// update/add cached entry for user
 					UserAccounts.Add(User.UserId, UserRef);
 
@@ -800,7 +808,7 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 		UE_LOG(LogOnline, Warning, TEXT("RegisterUser request failed. %s"), *ErrorStr);
 	}
 
-	TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, FUniqueNetIdString(User.UserId), ErrorStr);
+	TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, FUniqueNetIdString(User.UserId, TEXT("UEtopia")), ErrorStr);
 }
 
 

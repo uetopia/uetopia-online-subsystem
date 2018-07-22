@@ -15,6 +15,7 @@
 */
 DECLARE_DELEGATE_ThreeParams(FOnProfileRequestComplete, int32 /*LocalUserNum*/, bool /*bWasSuccessful*/, const FString& /*ErrorStr*/);
 
+#define AUTH_TYPE_UETOPIA TEXT("uetopia");
 #define FB_AUTH_EXPIRED_CREDS TEXT("com.epicgames.fb.oauth.expiredcreds");
 #define FB_AUTH_CANCELED	  TEXT("com.epicgames.login.canceled");
 
@@ -51,7 +52,7 @@ public:
 	{ }
 	*/
 	FUserOnlineAccountUEtopia(const FString& InUserId = TEXT(""), const FString& InAuthTicket = TEXT(""))
-		: UserIdPtr(new FUniqueNetIdString(InUserId))
+		: UserIdPtr(new FUniqueNetIdString(InUserId, TEXT("UEtopia")))
 		, UserId(InUserId)
 		, AuthTicket(InAuthTicket)
 	{ }

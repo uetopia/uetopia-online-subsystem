@@ -32,7 +32,7 @@ void FOnlineAchievementsUEtopia::WriteAchievements(const FUniqueNetId& PlayerId,
 		return;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId);
+	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia") );
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
 	{
@@ -70,7 +70,7 @@ void FOnlineAchievementsUEtopia::QueryAchievements( const FUniqueNetId& PlayerId
 		return;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId);
+	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia") );
 	if (!PlayerAchievements.Find(UEtopiaId))
 	{
 		// copy for a new player
@@ -119,7 +119,7 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievement(const
 		return EOnlineCachedResult::NotFound;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId);
+	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
 	{
@@ -149,7 +149,7 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievements(cons
 		return EOnlineCachedResult::NotFound;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId);
+	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
 	{
@@ -196,7 +196,7 @@ bool FOnlineAchievementsUEtopia::ResetAchievements(const FUniqueNetId& PlayerId)
 		return false;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId);
+	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
 	{

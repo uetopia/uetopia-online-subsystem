@@ -43,7 +43,7 @@ void FOnlineSessionInfoUEtopia::Init(const FOnlineSubsystemUEtopia& Subsystem)
 
 	FGuid OwnerGuid;
 	FPlatformMisc::CreateGuid(OwnerGuid);
-	SessionId = FUniqueNetIdString(OwnerGuid.ToString());
+	SessionId = FUniqueNetIdString(OwnerGuid.ToString(), TEXT("UEtopia"));
 
 
 
@@ -217,7 +217,7 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 		// if did not get a valid one, use just something
 		if (!Session->OwningUserId.IsValid())
 		{
-			Session->OwningUserId = MakeShareable(new FUniqueNetIdString(FString::Printf(TEXT("%d"), HostingPlayerNum)));
+			Session->OwningUserId = MakeShareable(new FUniqueNetIdString(FString::Printf(TEXT("%d"), HostingPlayerNum, TEXT("UEtopia"))));
 			Session->OwningUserName = FString(TEXT("UEtopiaUser"));
 		}
 
@@ -1260,7 +1260,7 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 		FString session_id = "";
 		Session->SessionSettings.Get(key, session_id);
 		const FString session_id_const = session_id;
-		FUniqueNetIdString *session_id_str = new FUniqueNetIdString(session_id_const);
+		FUniqueNetIdString *session_id_str = new FUniqueNetIdString(session_id_const, TEXT("UEtopia"));
 
 		NewSessionInfo->SetSessionId(session_id_str);
 
@@ -1553,7 +1553,7 @@ bool FOnlineSessionUEtopia::RegisterPlayer(FName SessionName, const FUniqueNetId
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Player"));
 	TArray< TSharedRef<const FUniqueNetId> > Players;
-	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId)));
+	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
 	return RegisterPlayers(SessionName, Players, bWasInvited);
 }
 
@@ -1611,7 +1611,7 @@ bool FOnlineSessionUEtopia::UnregisterPlayer(FName SessionName, const FUniqueNet
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session UNRegister Player"));
 	TArray< TSharedRef<const FUniqueNetId> > Players;
-	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId)));
+	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
 	return UnregisterPlayers(SessionName, Players);
 }
 
@@ -1699,7 +1699,7 @@ void FOnlineSessionUEtopia::AppendSessionToPacket(FNboSerializeToBufferUEtopia& 
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Append to Packet"));
 	/** Owner of the session */
-	Packet << *StaticCastSharedPtr<const FUniqueNetIdString>(Session->OwningUserId)
+	Packet << *StaticCastSharedPtr<const FUniqueNetIdString>(Session->OwningUserId) // TODO - Add type here?  
 		<< Session->OwningUserName
 		<< Session->NumOpenPrivateConnections
 		<< Session->NumOpenPublicConnections;

@@ -45,7 +45,7 @@ public:
 	IOnlinePartyJoinInfoUEtopia(const FOnlinePartyData& inPartyData, const FString& InUserId, const FString& InPartyId = TEXT(""))
 		: PartyId(new FOnlinePartyIdUEtopia(InPartyId)),
 		PartyData(inPartyData),
-		LeaderId(new FUniqueNetIdString(InUserId))
+		LeaderId(new FUniqueNetIdString(InUserId, TEXT("UEtopia")))
 	{
 	}
 

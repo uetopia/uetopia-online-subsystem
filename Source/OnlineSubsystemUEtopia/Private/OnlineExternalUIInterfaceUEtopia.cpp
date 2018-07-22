@@ -52,7 +52,7 @@ bool FOnlineExternalUIUEtopia::ShowLoginUI(const int ControllerIndex, bool bShow
 		UEtopiaSubsystem->ExecuteNextTick([ControllerIndex, Delegate]()
 		{
 			//Delegate.ExecuteIfBound(nullptr, ControllerIndex);
-			Delegate.ExecuteIfBound(nullptr, ControllerIndex, FOnlineError(FString(TEXT("!bStarted"))));
+			Delegate.ExecuteIfBound(nullptr, ControllerIndex, FOnlineError(false));
 		});
 	}
 

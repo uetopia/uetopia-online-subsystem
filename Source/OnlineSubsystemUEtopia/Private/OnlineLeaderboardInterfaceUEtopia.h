@@ -28,7 +28,7 @@ private:
 			if (Row == NULL)
 			{
 				// cannot have a better nickname here
-				FOnlineStatsRow NewRow(UserId.ToString(), MakeShareable(new FUniqueNetIdString(UserId)));
+				FOnlineStatsRow NewRow(UserId.ToString(), MakeShareable(new FUniqueNetIdString(UserId.ToString(), TEXT("UEtopia"))));
 				NewRow.Rank = -1;
 				Rows.Add(NewRow);
 			}

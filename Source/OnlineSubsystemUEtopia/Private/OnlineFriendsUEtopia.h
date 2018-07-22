@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Http.h"
 #include "OnlineFriendsInterface.h"
+#include "OnlineSubsystemUEtopiaTypes.h"
 #include "OnlineSubsystemUEtopiaPackage.h"
 #include "OnlinePresenceInterface.h"
 
@@ -34,7 +35,7 @@ public:
 	 * Init/default constructor
 	 */
 	FOnlineFriendUEtopia(const FString& InUserId=TEXT(""))
-		: UserId(new FUniqueNetIdString(InUserId))
+		: UserId(new FUniqueNetIdUetopia(InUserId))
 	{
 	}
 
@@ -96,7 +97,7 @@ public:
 	* Init/default constructor
 	*/
 	FOnlineRecentPlayerUEtopia(const FString& InUserId = TEXT(""))
-		: UserId(new FUniqueNetIdString(InUserId))
+		: UserId(new FUniqueNetIdUetopia(InUserId))
 	{
 	}
 

@@ -552,12 +552,12 @@ void FOnlineChatUEtopia::ReadJoinedRooms_HttpRequestComplete(FHttpRequestPtr Htt
 					JsonChannelEntry->TryGetStringField("chatChannelType", chatChannelType);
 					JsonChannelEntry->TryGetStringField("chatChannelOwnerKeyIdStr", chatChannelOwnerKeyId);
 
-					UE_LOG(LogOnline, Log, TEXT("\t\t keyIdStr (%s)"), *keyIdStr);
-					UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelKeyId (%s)"), *chatChannelKeyId);
-					UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelTitle (%s)"), *chatChannelTitle);
-					UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelRefKeyId (%s)"), *chatChannelRefKeyId);
-					UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelType (%s)"), *chatChannelType);
-					UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelOwnerKeyId (%s)"), *chatChannelOwnerKeyId);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t keyIdStr (%s)"), *keyIdStr);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelKeyId (%s)"), *chatChannelKeyId);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelTitle (%s)"), *chatChannelTitle);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelRefKeyId (%s)"), *chatChannelRefKeyId);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelType (%s)"), *chatChannelType);
+					//UE_LOG(LogOnline, Log, TEXT("\t\t chatChannelOwnerKeyId (%s)"), *chatChannelOwnerKeyId);
 
 					// only add if valid id
 					if (!keyIdStr.IsEmpty())

@@ -8,6 +8,97 @@
 class FOnlineSubsystemUEtopia;
 
 /**
+* 4.20 requires a special class for uniquenetid
+*/
+class FUniqueNetIdUetopia :
+	public FUniqueNetId
+{
+PACKAGE_SCOPE:
+	/** Holds the net id for a player */
+	uint64 UniqueNetId;
+
+	/** Hidden on purpose */
+	FUniqueNetIdUetopia() :
+		UniqueNetId(0)
+	{
+	}
+
+	/**
+	* Copy Constructor
+	*
+	* @param Src the id to copy
+	*/
+	explicit FUniqueNetIdUetopia(const FUniqueNetIdUetopia& Src) :
+		UniqueNetId(Src.UniqueNetId)
+	{
+	}
+
+public:
+	/**
+	* Constructs this object with the specified net id
+	*
+	* @param InUniqueNetId the id to set ours to
+	*/
+	explicit FUniqueNetIdUetopia(uint64 InUniqueNetId) :
+		UniqueNetId(InUniqueNetId)
+	{
+	}
+
+	explicit FUniqueNetIdUetopia(const FString& Str) :
+		UniqueNetId(FCString::Strtoui64(*Str, nullptr, 10))
+	{
+	}
+
+	virtual FName GetType() const override
+	{
+		return UETOPIA_SUBSYSTEM;
+	}
+
+	//~ Begin FUniqueNetId Interface
+	virtual const uint8* GetBytes() const override
+	{
+		return (uint8*)&UniqueNetId;
+	}
+
+
+	virtual int32 GetSize() const override
+	{
+		return sizeof(uint64);
+	}
+
+
+	virtual bool IsValid() const override
+	{
+		return UniqueNetId != 0;
+	}
+
+
+	virtual FString ToString() const override
+	{
+		return FString::Printf(TEXT("%I64d"), UniqueNetId);
+	}
+
+
+	virtual FString ToDebugString() const override
+	{
+		return FString::Printf(TEXT("0%I64X"), UniqueNetId);
+	}
+
+	//~ End FUniqueNetId Interface
+
+
+public:
+	/** Needed for TMap::GetTypeHash() */
+	friend uint32 GetTypeHash(const FUniqueNetIdUetopia& A)
+	{
+		// From online subsytem facebook
+		//return (uint32)(A.UniqueNetId) + ((uint32)((A.UniqueNetId) >> 32) * 23);
+		// we already use ints, so don't bother.
+		return (uint32)(A.UniqueNetId);
+	}
+};
+
+/**
  * Implementation of session information
  */
 class FOnlineSessionInfoUEtopia : public FOnlineSessionInfo

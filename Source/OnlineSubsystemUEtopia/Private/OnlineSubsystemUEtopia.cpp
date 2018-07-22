@@ -461,7 +461,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming senderUserKeyId: %s"), *senderUserKeyId);
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming textMessage: %s"), *textMessage);
 
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 
 			// Trigger the delegate to cause the UI to update
 			this->GetChatInterface()->TriggerOnChatRoomListChangedDelegates(*SenderUserIdPtr, textMessage);
@@ -492,7 +492,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming textMessage: %s"), *textMessage);
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_message_incoming created: %s"), *created);
 
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 
 			FDateTime messageTimestamp;
 			FDateTime::ParseIso8601(*created, messageTimestamp);
@@ -535,7 +535,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming textMessage: %s"), *textMessage);
 			UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::chat_room_message_incoming created: %s"), *created);
 
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 
 			FDateTime messageTimestamp;
 			FDateTime::ParseIso8601(*created, messageTimestamp);
@@ -580,7 +580,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 			// Convert the string IDs into the appropriate types
 			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 
 			// TODO store this senderTitle somewhere.  We're going to need it to display the Invite request UI dialog.
 			TSharedRef<FOnlineFriendUEtopia> FriendEntry(new FOnlineFriendUEtopia(senderUserKeyId));
@@ -769,7 +769,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 			// Convert the string IDs into the appropriate types
 			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 			const FString& partyKeyIdConst = partyKeyId;
 			TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
 
@@ -801,7 +801,7 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 
 			// Convert the string IDs into the appropriate types
 			TSharedPtr <const FUniqueNetId> localUNetId = this->GetIdentityInterface()->GetUniquePlayerId(0);
-			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId));
+			TSharedRef<const FUniqueNetId> SenderUserIdPtr = MakeShareable(new FUniqueNetIdString(senderUserKeyId, TEXT("UEtopia")));
 			const FString& partyKeyIdConst = partyKeyId;
 			TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
 
