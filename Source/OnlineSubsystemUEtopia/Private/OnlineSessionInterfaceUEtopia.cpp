@@ -76,6 +76,7 @@ public:
 	{
 		// this is causing an error on 4.20 - muting it for now
 		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaEndSession SessionName: %s"), *SessionName.ToString());
 	}
 
 	/**
@@ -142,6 +143,7 @@ public:
 	{
 		// this is causing an error on 4.20 - muting it for now
 		//return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession bWasSuccessful: %d SessionName: %s"), bWasSuccessful, *SessionName.ToString());
+		return FString::Printf(TEXT("FOnlineAsyncTaskUEtopiaDestroySession SessionName: %s"), *SessionName.ToString());
 	}
 
 	/**
