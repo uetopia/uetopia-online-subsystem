@@ -5,6 +5,8 @@ using System.IO;
 
 public class OnlineSubsystemUEtopia : ModuleRules
 {
+
+    /*
     private string ThirdPartyPath
     {
         get { return Path.GetFullPath(Path.Combine(ModuleDirectory, "../../ThirdParty/")); }
@@ -39,22 +41,30 @@ public class OnlineSubsystemUEtopia : ModuleRules
         }
         return isLibrarySupported;
     }
+    */
 
     public OnlineSubsystemUEtopia(ReadOnlyTargetRules Target) : base(Target)
     {
-		Definitions.Add("ONLINESUBSYSTEMUETOPIA_PACKAGE=1");
+		PublicDefinitions.Add("ONLINESUBSYSTEMUETOPIA_PACKAGE=1");
         PCHUsage = PCHUsageMode.UseSharedPCHs;
         //PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+        PrivatePCHHeaderFile = "Private/OnlineSubsystemUEtopiaPrivatePCH.h";
+
+        // 4.21 thing copied from OSS Facebook.  What does this do?
+        //PrivateIncludePaths.Add("Private");
+
+        /*
         PublicIncludePaths.AddRange(
                 new string[] {
-                "OnlineSubsystemUEtopia/Public",
-                    Path.Combine(BoostThirdParty, "Include"),
+               // "OnlineSubsystemUEtopia/Public", // This changed in 4.21 and cannot be found anymore....
+                    //Path.Combine(BoostThirdParty, "Include"),
                     Path.Combine(SocketIOThirdParty, "Include"),
                     // ... add public include paths required here ...
                     //"Runtime/LoginFlow/Public",
                 }
                 );
+         */
 
         PrivateIncludePaths.AddRange(
                 new string[] {
@@ -70,6 +80,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "Core",
                 "Json",
                 "JsonUtilities",
+                "SocketIOClient",
                 "SIOJson",
                 "OnlineSubsystemUtils",
                     // ... add other public dependencies that you statically link with here ...
@@ -92,7 +103,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
             }
 			);
 
-        LoadLib(Target);
+        //LoadLib(Target);
 
     }
 }

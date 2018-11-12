@@ -9,7 +9,7 @@
 #include "SocketSubsystem.h"
 #include "LANBeacon.h"
 #include "NboSerializerUEtopia.h"
-
+#include "OnlineSubsystemUEtopiaTypes.h"
 #include "VoiceInterface.h"
 
 
@@ -190,7 +190,7 @@ public:
 bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionName, const FOnlineSessionSettings& NewSessionSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::CreateSession"));
-	uint32 Result = E_FAIL;
+	uint32 Result = ONLINE_FAIL;
 
 	// Check for an existing session
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
@@ -244,12 +244,12 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 
 		Result = UpdateLANStatus();
 
-		if (Result != ERROR_IO_PENDING)
+		if (Result != ONLINE_IO_PENDING)
 		{
 			// Set the game state as pending (not started)
 			Session->SessionState = EOnlineSessionState::Pending;
 
-			if (Result != ERROR_SUCCESS)
+			if (Result != ONLINE_SUCCESS)
 			{
 				// Clean up the session info so we don't get into a confused state
 				RemoveNamedSession(SessionName);
@@ -266,15 +266,15 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 	}
 
 	/*
-	if (Result != ERROR_IO_PENDING)
+	if (Result != ONLINE_IO_PENDING)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Create: Result != ERROR_IO_PENDING"));
-		TriggerOnCreateSessionCompleteDelegates(SessionName, (Result == ERROR_SUCCESS) ? true : false);
+		UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Create: Result != ONLINE_IO_PENDING"));
+		TriggerOnCreateSessionCompleteDelegates(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
 	}
 	*/
-	TriggerOnCreateSessionCompleteDelegates(SessionName, (Result == ERROR_SUCCESS) ? true : false);
+	TriggerOnCreateSessionCompleteDelegates(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
 
-	return Result == ERROR_IO_PENDING || Result == ERROR_SUCCESS;
+	return Result == ONLINE_IO_PENDING || Result == ONLINE_SUCCESS;
 }
 
 bool FOnlineSessionUEtopia::CreateSession(const FUniqueNetId& HostingPlayerId, FName SessionName, const FOnlineSessionSettings& NewSessionSettings)
@@ -323,7 +323,7 @@ bool FOnlineSessionUEtopia::NeedsToAdvertise(FNamedOnlineSession& Session)
 
 uint32 FOnlineSessionUEtopia::UpdateLANStatus()
 {
-	uint32 Result = ERROR_SUCCESS;
+	uint32 Result = ONLINE_SUCCESS;
 
 	if (NeedsToAdvertise())
 	{
@@ -333,7 +333,7 @@ uint32 FOnlineSessionUEtopia::UpdateLANStatus()
 			FOnValidQueryPacketDelegate QueryPacketDelegate = FOnValidQueryPacketDelegate::CreateRaw(this, &FOnlineSessionUEtopia::OnValidQueryPacketReceived);
 			if (!LANSessionManager.Host(QueryPacketDelegate))
 			{
-				Result = E_FAIL;
+				Result = ONLINE_FAIL;
 
 				LANSessionManager.StopLANSession();
 			}
@@ -354,7 +354,7 @@ uint32 FOnlineSessionUEtopia::UpdateLANStatus()
 bool FOnlineSessionUEtopia::StartSession(FName SessionName)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Start"));
-	uint32 Result = E_FAIL;
+	uint32 Result = ONLINE_FAIL;
 	// Grab the session information by name
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
 	if (Session)
@@ -380,13 +380,13 @@ bool FOnlineSessionUEtopia::StartSession(FName SessionName)
 		UE_LOG_ONLINE(Warning, TEXT("Can't start an online game for session (%s) that hasn't been created"), *SessionName.ToString());
 	}
 
-	if (Result != ERROR_IO_PENDING)
+	if (Result != ONLINE_IO_PENDING)
 	{
 		// Just trigger the delegate
-		TriggerOnStartSessionCompleteDelegates(SessionName, (Result == ERROR_SUCCESS) ? true : false);
+		TriggerOnStartSessionCompleteDelegates(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
 	}
 
-	return Result == ERROR_SUCCESS || Result == ERROR_IO_PENDING;
+	return Result == ONLINE_SUCCESS || Result == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::UpdateSession(FName SessionName, FOnlineSessionSettings& UpdatedSessionSettings, bool bShouldRefreshOnlineData)
@@ -409,7 +409,7 @@ bool FOnlineSessionUEtopia::UpdateSession(FName SessionName, FOnlineSessionSetti
 bool FOnlineSessionUEtopia::EndSession(FName SessionName)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session End"));
-	uint32 Result = E_FAIL;
+	uint32 Result = ONLINE_FAIL;
 
 	// Grab the session information by name
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
@@ -436,22 +436,22 @@ bool FOnlineSessionUEtopia::EndSession(FName SessionName)
 			*SessionName.ToString());
 	}
 
-	if (Result != ERROR_IO_PENDING)
+	if (Result != ONLINE_IO_PENDING)
 	{
 		if (Session)
 		{
 			Session->SessionState = EOnlineSessionState::Ended;
 		}
 
-		TriggerOnEndSessionCompleteDelegates(SessionName, (Result == ERROR_SUCCESS) ? true : false);
+		TriggerOnEndSessionCompleteDelegates(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
 	}
 
-	return Result == ERROR_SUCCESS || Result == ERROR_IO_PENDING;
+	return Result == ONLINE_SUCCESS || Result == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::DestroySession(FName SessionName, const FOnDestroySessionCompleteDelegate& CompletionDelegate)
 {
-	uint32 Result = E_FAIL;
+	uint32 Result = ONLINE_FAIL;
 	// Find the session in question
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
 	if (Session)
@@ -466,13 +466,13 @@ bool FOnlineSessionUEtopia::DestroySession(FName SessionName, const FOnDestroySe
 		UE_LOG_ONLINE(Warning, TEXT("Can't destroy a null online session (%s)"), *SessionName.ToString());
 	}
 
-	if (Result != ERROR_IO_PENDING)
+	if (Result != ONLINE_IO_PENDING)
 	{
-		CompletionDelegate.ExecuteIfBound(SessionName, (Result == ERROR_SUCCESS) ? true : false);
-		TriggerOnDestroySessionCompleteDelegates(SessionName, (Result == ERROR_SUCCESS) ? true : false);
+		CompletionDelegate.ExecuteIfBound(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
+		TriggerOnDestroySessionCompleteDelegates(SessionName, (Result == ONLINE_SUCCESS) ? true : false);
 	}
 
-	return Result == ERROR_SUCCESS || Result == ERROR_IO_PENDING;
+	return Result == ONLINE_SUCCESS || Result == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::IsPlayerInSession(FName SessionName, const FUniqueNetId& UniqueId)
@@ -483,7 +483,7 @@ bool FOnlineSessionUEtopia::IsPlayerInSession(FName SessionName, const FUniqueNe
 bool FOnlineSessionUEtopia::StartMatchmaking(const TArray< TSharedRef<const FUniqueNetId> >& LocalPlayers, FName SessionName, const FOnlineSessionSettings& NewSessionSettings, TSharedRef<FOnlineSessionSearch>& SearchSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::StartMatchmaking"));
-	uint32 Return = ERROR_IO_PENDING;
+	uint32 Return = ONLINE_IO_PENDING;
 
 	// looking at online subsystem facebook friends to get this
 
@@ -922,8 +922,8 @@ void FOnlineSessionUEtopia::CheckMatchmaking_HttpRequestComplete(FHttpRequestPtr
 bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TSharedRef<FOnlineSessionSearch>& SearchSettings)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindSessions"));
-	uint32 Return = E_FAIL;
-	uint32 OnlineReturn = E_FAIL;
+	uint32 Return = ONLINE_FAIL;
+	uint32 OnlineReturn = ONLINE_FAIL;
 
 	// Don't start another search while one is in progress
 	// Modifying this because it's blocking
@@ -951,7 +951,7 @@ bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TShared
 		// Check if its a LAN query
 		//Return = FindLANSession();
 
-		//if (Return == ERROR_IO_PENDING)
+		//if (Return == ONLINE_IO_PENDING)
 		//{
 		//	SearchSettings->SearchState = EOnlineAsyncTaskState::InProgress;
 		//}
@@ -959,10 +959,10 @@ bool FOnlineSessionUEtopia::FindSessions(int32 SearchingPlayerNum, const TShared
 	else
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Ignoring game search request while one is pending"));
-		Return = ERROR_IO_PENDING;
+		Return = ONLINE_IO_PENDING;
 	}
 
-	return Return == ERROR_SUCCESS || Return == ERROR_IO_PENDING;
+	return Return == ONLINE_SUCCESS || Return == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::FindSessions(const FUniqueNetId& SearchingPlayerId, const TSharedRef<FOnlineSessionSearch>& SearchSettings)
@@ -983,7 +983,7 @@ bool FOnlineSessionUEtopia::FindSessionById(const FUniqueNetId& SearchingUserId,
 uint32 FOnlineSessionUEtopia::FindOnlineSession(FString UserKeyId)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::FindOnlineSession"));
-	uint32 Return = ERROR_IO_PENDING;
+	uint32 Return = ONLINE_IO_PENDING;
 
 	// looking at online subsystem facebook friends to get this
 	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
@@ -1167,7 +1167,7 @@ uint32 FOnlineSessionUEtopia::FindLANSession()
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Find LAN"));
 	/* UNUSED REMOVE */
-	uint32 Return = ERROR_IO_PENDING;
+	uint32 Return = ONLINE_IO_PENDING;
 
 	// Recreate the unique identifier for this client
 	GenerateNonce((uint8*)&LANSessionManager.LanNonce, 8);
@@ -1179,7 +1179,7 @@ uint32 FOnlineSessionUEtopia::FindLANSession()
 	LANSessionManager.CreateClientQueryPacket(Packet, LANSessionManager.LanNonce);
 	if (LANSessionManager.Search(Packet, ResponseDelegate, TimeoutDelegate) == false)
 	{
-		Return = E_FAIL;
+		Return = ONLINE_FAIL;
 
 		FinalizeLANSearch();
 
@@ -1193,11 +1193,11 @@ uint32 FOnlineSessionUEtopia::FindLANSession()
 
 bool FOnlineSessionUEtopia::CancelFindSessions()
 {
-	uint32 Return = E_FAIL;
+	uint32 Return = ONLINE_FAIL;
 	if (CurrentSessionSearch->SearchState == EOnlineAsyncTaskState::InProgress)
 	{
 		// Make sure it's the right type
-		Return = ERROR_SUCCESS;
+		Return = ONLINE_SUCCESS;
 
 		FinalizeLANSearch();
 
@@ -1209,18 +1209,18 @@ bool FOnlineSessionUEtopia::CancelFindSessions()
 		UE_LOG_ONLINE(Warning, TEXT("Can't cancel a search that isn't in progress"));
 	}
 
-	if (Return != ERROR_IO_PENDING)
+	if (Return != ONLINE_IO_PENDING)
 	{
 		TriggerOnCancelFindSessionsCompleteDelegates(true);
 	}
 
-	return Return == ERROR_SUCCESS || Return == ERROR_IO_PENDING;
+	return Return == ONLINE_SUCCESS || Return == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, const FOnlineSessionSearchResult& DesiredSession)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Join"));
-	uint32 Return = E_FAIL;
+	uint32 Return = ONLINE_FAIL;
 	FNamedOnlineSession* Session = GetNamedSession(SessionName);
 
 	// Don't join a session if already in one or hosting one
@@ -1285,9 +1285,9 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 		// turn off advertising on Join, to avoid clients advertising it over LAN
 		Session->SessionSettings.bShouldAdvertise = false;
 
-		if (Return != ERROR_IO_PENDING)
+		if (Return != ONLINE_IO_PENDING)
 		{
-			if (Return != ERROR_SUCCESS)
+			if (Return != ONLINE_SUCCESS)
 			{
 				// Clean up the session info so we don't get into a confused state
 				RemoveNamedSession(SessionName);
@@ -1303,13 +1303,13 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 	//	UE_LOG_ONLINE(Warning, TEXT("Session (%s) already exists, can't join twice"), *SessionName.ToString());
 	//}
 
-	if (Return != ERROR_IO_PENDING)
+	if (Return != ONLINE_IO_PENDING)
 	{
 		// Just trigger the delegate as having failed
-		TriggerOnJoinSessionCompleteDelegates(SessionName, Return == ERROR_SUCCESS ? EOnJoinSessionCompleteResult::Success : EOnJoinSessionCompleteResult::UnknownError);
+		TriggerOnJoinSessionCompleteDelegates(SessionName, Return == ONLINE_SUCCESS ? EOnJoinSessionCompleteResult::Success : EOnJoinSessionCompleteResult::UnknownError);
 	}
 
-	return Return == ERROR_SUCCESS || Return == ERROR_IO_PENDING;
+	return Return == ONLINE_SUCCESS || Return == ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::JoinSession(const FUniqueNetId& PlayerId, FName SessionName, const FOnlineSessionSearchResult& DesiredSession)
@@ -1372,7 +1372,7 @@ uint32 FOnlineSessionUEtopia::JoinLANSession(int32 PlayerNum, FNamedOnlineSessio
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Join LAN"));
 	check(Session != nullptr);
 
-	uint32 Result = E_FAIL;
+	uint32 Result = ONLINE_FAIL;
 	Session->SessionState = EOnlineSessionState::Pending;
 
 	// Debug logging
@@ -1400,7 +1400,7 @@ uint32 FOnlineSessionUEtopia::JoinLANSession(int32 PlayerNum, FNamedOnlineSessio
 		uint32 IpAddr;
 		SearchSessionInfo->HostAddr->GetIp(IpAddr);
 		SessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(IpAddr, SearchSessionInfo->HostAddr->GetPort());
-		Result = ERROR_SUCCESS;
+		Result = ONLINE_SUCCESS;
 	}
 
 	return Result;

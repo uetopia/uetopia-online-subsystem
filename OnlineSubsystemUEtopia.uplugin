@@ -1,24 +1,19 @@
 {
   "FileVersion": 3,
   "Version": 8,
-  "VersionName": "2.0.0",
+  "VersionName": "2.21.0",
   "FriendlyName": "UEtopia",
-  "Description": "Multiplayer tools.",
-  "Category": "Network",
+  "Description": "OSS interfaces used to connect to the uetopia.com backend.",
+  "Category": "Networking",
   "CreatedBy": "UEtopia",
   "CreatedByURL": "https://uetopia.com",
   "DocsURL": "https://uetopia.com",
   "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4954417b921e47acb01d68f2bb493503",
-  "EngineVersion": "4.20.0",
+  "EngineVersion": "4.21.0",
   "SupportURL": "https://uetopia.comm",
   "Modules": [
     {
       "Name": "OnlineSubsystemUEtopia",
-      "Type": "Runtime",
-      "LoadingPhase": "PreDefault"
-    },
-    {
-      "Name": "SIOJson",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault"
     }
@@ -31,7 +26,12 @@
     {
       "Name": "OnlineSubsystemUtils",
       "Enabled": true
-    }
+    },
+	{
+	  "Name": "SocketIOClient",
+	  "Enabled": true
+	}
+
   ],
   "EnabledByDefault": false,
   "CanContainContent": false,

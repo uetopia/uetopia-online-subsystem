@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Http.h"
-#include "OnlineTournamentsInterface.h"
+#include "OnlineTournamentInterface.h"
 #include "OnlineSubsystemUEtopiaPackage.h"
 #include "OnlinePresenceInterface.h"
 
 
 /**
-* Info associated with an online friend on the UEtopia service
+* Info associated with an online tournament on the UEtopia service
 */
 class FOnlineTournamentUEtopia :
 	public FOnlineTournament
@@ -86,7 +86,7 @@ private:
 * UEtopia implementation of the online party interface
 */
 class FOnlineTournamentSystemUEtopia :
-	public IOnlineTournamentSystem
+	public IOnlineTournament
 {
 
 public:

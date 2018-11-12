@@ -441,6 +441,11 @@ bool FOnlineFriendsUEtopia::GetRecentPlayers(const FUniqueNetId& UserId, const F
 	return bResult;
 }
 
+void FOnlineFriendsUEtopia::DumpRecentPlayers() const
+{
+
+}
+
 bool FOnlineFriendsUEtopia::BlockPlayer(int32 LocalUserNum, const FUniqueNetId& PlayerId)
 {
 	return false;
