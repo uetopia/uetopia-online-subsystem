@@ -69,7 +69,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
         PrivateIncludePaths.AddRange(
                 new string[] {
                 "OnlineSubsystemUEtopia/Private",
-                
+
                     // ... add other private include paths required here ...
                 }
                 );
@@ -83,6 +83,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "SocketIOClient",
                 "SIOJson",
                 "OnlineSubsystemUtils",
+                "CoreUtility"
                     // ... add other public dependencies that you statically link with here ...
                 }
                 );
@@ -99,7 +100,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 "HTTP",
                 "Networking",
                 //"LoginFlow"
-                
+
             }
 			);
 
