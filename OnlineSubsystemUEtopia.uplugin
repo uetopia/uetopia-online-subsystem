@@ -1,15 +1,15 @@
 {
   "FileVersion": 3,
-  "Version": 8,
-  "VersionName": "2.21.0",
-  "FriendlyName": "UEtopia",
+  "Version": 9,
+  "VersionName": "2.22.2",
+  "FriendlyName": "UETOPIA",
   "Description": "OSS interfaces used to connect to the uetopia.com backend.",
   "Category": "Networking",
   "CreatedBy": "UEtopia",
   "CreatedByURL": "https://uetopia.com",
   "DocsURL": "https://uetopia.com",
   "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4954417b921e47acb01d68f2bb493503",
-  "EngineVersion": "4.21.0",
+  "EngineVersion": "4.22.2",
   "SupportURL": "https://uetopia.comm",
   "Modules": [
     {
