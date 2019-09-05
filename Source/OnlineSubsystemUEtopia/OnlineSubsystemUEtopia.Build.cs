@@ -66,10 +66,12 @@ public class OnlineSubsystemUEtopia : ModuleRules
                 );
          */
 
+        //PublicAdditionalLibraries.Add(Path.Combine("../../SocketIOClient/Source/SocketIOLib/Public",  "sioclient.lib"));
+
         PrivateIncludePaths.AddRange(
                 new string[] {
                 "OnlineSubsystemUEtopia/Private",
-
+                //"../../SocketIOClient/Source/SocketIOLib/Public",
                     // ... add other private include paths required here ...
                 }
                 );
@@ -99,6 +101,7 @@ public class OnlineSubsystemUEtopia : ModuleRules
 				"Json",
                 "HTTP",
                 "Networking",
+                "SocketIOLib",
                 //"LoginFlow"
 
             }

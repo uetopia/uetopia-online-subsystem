@@ -126,6 +126,11 @@ IOnlineChatPtr FOnlineSubsystemUEtopia::GetChatInterface() const
 	return UEtopiaChat;
 }
 
+IOnlineStatsPtr FOnlineSubsystemUEtopia::GetStatsInterface() const
+{
+	return nullptr;
+}
+
 IOnlineTurnBasedPtr FOnlineSubsystemUEtopia::GetTurnBasedInterface() const
 {
 	return nullptr;
@@ -893,8 +898,8 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 		const FString& partyKeyIdConst = partyKeyId;
 		TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
 
-
-		this->GetPartyInterface()->TriggerOnPartyDataReceivedDelegates(*localUNetId, *PartyIdPtr, PartyData);
+		// Changed in 4.23
+		this->GetPartyInterface()->TriggerOnPartyDataReceivedDelegates(*localUNetId, *PartyIdPtr, *PartyData);
 
 
 	}, FString("/"));
@@ -1078,8 +1083,8 @@ bool FOnlineSubsystemUEtopia::PostLoginBackendProcess()
 	FString AccessToken = IdentityInterface->GetAuthToken(0);
 
 	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-	FString GameKey = GetGameKey();
-	FString APIURL = GetAPIURL();
+	//FString GameKey = GetGameKey();
+	//FString APIURL = GetAPIURL();
 	FString SessionQueryUrl = "https://ue4topia.appspot.com/_ah/api/users/v1/postLoginProcess";
 
 	if (IsRunningDedicatedServer())

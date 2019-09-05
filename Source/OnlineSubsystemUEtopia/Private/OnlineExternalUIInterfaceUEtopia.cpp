@@ -152,7 +152,8 @@ FLoginFlowResult FOnlineExternalUIUEtopia::OnLoginRedirectURL(const FString& Red
 								}
 
 								Result.Error.ErrorCode = *ErrorCode;
-								Result.Error.NumericErrorCode = FPlatformString::Atoi(**ErrorCode);
+								// Removed in 4.22
+								Result.NumericErrorCode = FPlatformString::Atoi(**ErrorCode);
 							}
 							else
 							{
@@ -160,7 +161,8 @@ FLoginFlowResult FOnlineExternalUIUEtopia::OnLoginRedirectURL(const FString& Red
 								Result.Error.ErrorRaw = LOGIN_ERROR_UNKNOWN;
 								Result.Error.ErrorMessage = FText::FromString(LOGIN_ERROR_UNKNOWN);
 								Result.Error.ErrorCode = TEXT("-1");
-								Result.Error.NumericErrorCode = -1;
+								// Changed in 4.22
+								Result.NumericErrorCode = -1;
 							}
 						}
 					}
@@ -174,7 +176,7 @@ FLoginFlowResult FOnlineExternalUIUEtopia::OnLoginRedirectURL(const FString& Red
 
 void FOnlineExternalUIUEtopia::OnExternalLoginFlowComplete(const FLoginFlowResult& Result, int ControllerIndex, const FOnLoginUIClosedDelegate Delegate)
 {
-	UE_LOG(LogOnline, Log, TEXT("OnExternalLoginFlowComplete %s %s"), *Result.Token, Result.Error.ToLogString());
+	//UE_LOG(LogOnline, Log, TEXT("OnExternalLoginFlowComplete %s %s"), *Result.Token, Result.Error.ToLogString());
 
 	bool bStarted = false;
 	if (Result.IsValid())

@@ -66,11 +66,11 @@ bool IOnlinePartyJoinInfoUEtopia::IsValid() const
 {
 	return false;
 }
-const TSharedRef<const FOnlinePartyId>& IOnlinePartyJoinInfoUEtopia::GetPartyId() const
+TSharedRef<const FOnlinePartyId> IOnlinePartyJoinInfoUEtopia::GetPartyId() const
 {
 	return PartyId;
 }
-const FOnlinePartyTypeId IOnlinePartyJoinInfoUEtopia::GetPartyTypeId() const
+FOnlinePartyTypeId IOnlinePartyJoinInfoUEtopia::GetPartyTypeId() const
 {
 	return PartyTypeId;
 }
@@ -96,7 +96,7 @@ const FString& IOnlinePartyJoinInfoUEtopia::GetSourcePlatform() const
  	return genericString;
 }
 
-const TSharedRef<const FUniqueNetId>& IOnlinePartyJoinInfoUEtopia::GetSourceUserId() const
+TSharedRef<const FUniqueNetId> IOnlinePartyJoinInfoUEtopia::GetSourceUserId() const
 {
 	return LeaderId;
 }
@@ -158,6 +158,16 @@ FOnlinePartyUEtopia::FOnlinePartyUEtopia(FOnlineSubsystemUEtopia* InSubsystem)
 
 FOnlinePartyUEtopia::~FOnlinePartyUEtopia()
 {
+}
+
+void FOnlinePartyUEtopia::RestoreParties(const FUniqueNetId& LocalUserId, const FOnRestorePartiesComplete& CompletionDelegate)
+{
+	return;
+}
+
+void FOnlinePartyUEtopia::CleanupParties(const FUniqueNetId& LocalUserId, const FOnCleanupPartiesComplete& CompletionDelegate)
+{
+	return;
 }
 
 bool FOnlinePartyUEtopia::CreateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId PartyTypeId, const FPartyConfiguration& PartyConfig, const FOnCreatePartyComplete& Delegate /*= FOnCreatePartyComplete()*/)
@@ -329,6 +339,11 @@ bool FOnlinePartyUEtopia::JoinParty(const FUniqueNetId& LocalUserId, const IOnli
 	return false;
 }
 
+bool FOnlinePartyUEtopia::JIPFromWithinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& PartyLeaderId)
+{
+	return false;
+}
+
 void FOnlinePartyUEtopia::QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityComplete& Delegate /*= FOnQueryPartyJoinabilityComplete() */)
 {
 	return;
@@ -442,6 +457,11 @@ void FOnlinePartyUEtopia::LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpReq
 }
 
 bool FOnlinePartyUEtopia::ApproveJoinRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode)
+{
+	return false;
+}
+
+bool FOnlinePartyUEtopia::ApproveJIPRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode)
 {
 	return false;
 }
@@ -769,22 +789,22 @@ TSharedPtr<const FOnlineParty> FOnlinePartyUEtopia::GetParty(const FUniqueNetId&
 	return nullptr;
 }
 
-TSharedPtr<FOnlinePartyMember> FOnlinePartyUEtopia::GetPartyMember(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
+FOnlinePartyMemberConstPtr FOnlinePartyUEtopia::GetPartyMember(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
 {
 	return nullptr;
 }
 
-TSharedPtr<FOnlinePartyData> FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId) const
+FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId) const
 {
 	return nullptr;
 }
 
-TSharedPtr<FOnlinePartyData> FOnlinePartyUEtopia::GetPartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
+FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
 {
 	return nullptr;
 }
 
-TSharedPtr<IOnlinePartyJoinInfo> FOnlinePartyUEtopia::GetAdvertisedParty(const FUniqueNetId& LocalUserId, const FUniqueNetId& UserId, const FOnlinePartyTypeId PartyTypeId) const
+IOnlinePartyJoinInfoConstPtr FOnlinePartyUEtopia::GetAdvertisedParty(const FUniqueNetId& LocalUserId, const FUniqueNetId& UserId, const FOnlinePartyTypeId PartyTypeId) const
 {
 	return nullptr;
 }
@@ -799,13 +819,30 @@ bool FOnlinePartyUEtopia::GetPartyMembers(const FUniqueNetId& LocalUserId, const
 	return false;
 }
 
+bool FOnlinePartyUEtopia::GetPartyMembers(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<FOnlinePartyMemberConstRef>& OutPartyMembersArray) const
+{
+	return false;
+}
+
 bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TArray<TSharedRef<IOnlinePartyJoinInfo>>& OutPendingInvitesArray) const
 {
 	OutPendingInvitesArray = PendingInvitesArray;
 	return true;
 }
 
+bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TArray<IOnlinePartyJoinInfoConstRef>& OutPendingInvitesArray) const
+{
+	//OutPendingInvitesArray = PendingInvitesArray;
+	//return true;
+	return false;
+}
+
 bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<IOnlinePartyPendingJoinRequestInfo>>& OutPendingJoinRequestArray) const
+{
+	return false;
+}
+
+bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<IOnlinePartyPendingJoinRequestInfoConstRef>& OutPendingJoinRequestArray) const
 {
 	return false;
 }
@@ -820,7 +857,7 @@ FString FOnlinePartyUEtopia::MakeJoinInfoJson(const FUniqueNetId& LocalUserId, c
 	return "";
 }
 
-TSharedPtr<IOnlinePartyJoinInfo> FOnlinePartyUEtopia::MakeJoinInfoFromJson(const FString& JoinInfoJson)
+IOnlinePartyJoinInfoConstPtr FOnlinePartyUEtopia::MakeJoinInfoFromJson(const FString& JoinInfoJson)
 {
 	return nullptr;
 }
@@ -830,7 +867,7 @@ FString FOnlinePartyUEtopia::MakeTokenFromJoinInfo(const IOnlinePartyJoinInfo& J
 	return "";
 }
 
-TSharedRef<IOnlinePartyJoinInfo> FOnlinePartyUEtopia::MakeJoinInfoFromToken(const FString& Token) const
+IOnlinePartyJoinInfoConstPtr FOnlinePartyUEtopia::MakeJoinInfoFromToken(const FString& Token) const
 {
 	FOnlinePartyData PartyData;
 	//TSharedPtr<IOnlinePartyJoinInfo> PartyJoinInfo = MakeShareable(new IOnlinePartyJoinInfoUEtopia(PartyData, "test"));
@@ -838,7 +875,7 @@ TSharedRef<IOnlinePartyJoinInfo> FOnlinePartyUEtopia::MakeJoinInfoFromToken(cons
 	return PartyJoinInfo;
 }
 
-TSharedPtr<IOnlinePartyJoinInfo> FOnlinePartyUEtopia::ConsumePendingCommandLineInvite()
+IOnlinePartyJoinInfoConstPtr FOnlinePartyUEtopia::ConsumePendingCommandLineInvite()
 {
 	return nullptr;
 }

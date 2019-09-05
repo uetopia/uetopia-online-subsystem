@@ -5,8 +5,11 @@
 #include "OnlineExternalUIUEtopiaCommon.h"
 #include "OnlineSubsystemUEtopiaTypes.h"
 #include "IPAddress.h"
-#include "SocketSubsystem.h"
+//#include "SocketSubsystem.h"
+//#include "HttpModule.h"
+//#include "Interfaces/IHttpResponse.h"
 //#include "LoginFlowManager.h"
+#include "Runtime/Online/HTTP/Public/HttpManager.h"
 
 bool FUserOnlineAccountUEtopia::GetAuthAttribute(const FString& AttrName, FString& OutAttrValue) const
 {
@@ -186,15 +189,18 @@ void FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FString& AccessToke
 	{
 		FOnRequestCurrentPermissionsComplete NextCompletionDelegate = FOnRequestCurrentPermissionsComplete::CreateLambda([this, InCompletionDelegate](int32 LocalUserNumFromPerms, bool bWasSuccessful, const TArray<FSharingPermission>& Permissions)
 		{
+			UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 02 Requesting Permissions"));
 			OnRequestCurrentPermissionsComplete(LocalUserNumFromPerms, bWasSuccessful, Permissions, InCompletionDelegate);
 		});
 
 		if (bWasSuccessful)
 		{
+			UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 02 bWasSuccessful"));
 			RequestCurrentPermissions(LocalUserNumFromRequest, NextCompletionDelegate);
 		}
 		else
 		{
+			UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login 02 ERROR"));
 			InCompletionDelegate.ExecuteIfBound(LocalUserNumFromRequest, bWasSuccessful, GetEmptyUniqueId(), ErrorStr);
 		}
 	});
@@ -645,12 +651,13 @@ void FOnlineIdentityUEtopia::RevokeAuthToken(const FUniqueNetId& UserId, const F
 * Sets the needed configuration properties
 */
 FOnlineIdentityUEtopia::FOnlineIdentityUEtopia(FOnlineSubsystemUEtopia* InSubsystem)
-	: UEtopiaSubsystem(InSubsystem)
-	, LastCheckElapsedTime(0.f)
+	:
+	LastCheckElapsedTime(0.f)
 	, TotalCheckElapsedTime(0.f)
 	, MaxCheckElapsedTime(0.f)
 	, bHasLoginOutstanding(false)
 	, LocalUserNumPendingLogin(0)
+	, UEtopiaSubsystem(InSubsystem)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::FOnlineIdentityUEtopia"));
 	if (!GConfig->GetString(TEXT("OnlineSubsystemUEtopia.OnlineIdentityUEtopia"), TEXT("LoginUrl"), LoginURLDetails.LoginUrl, GEngineIni))
@@ -860,19 +867,28 @@ void FOnlineIdentityUEtopia::ProfileRequest(int32 LocalUserNum, const FString& A
 				bStarted = true;
 
 				// kick off http request to get user info with the access token
+
+				// 4.22 this is broken using VS 2017
+				// https://answers.unrealengine.com/questions/888070/http-requests-not-working-in-plugin.html
+				// The fix is to use VS 2019
+
 				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
 				LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNum, AccessToken));
 
 				FString FinalURL = MeURL.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
+
 				if (InProfileFields.Num() > 0)
 				{
 					FinalURL += FString::Printf(TEXT("&fields=%s"), *FString::Join(InProfileFields, TEXT(",")));
 				}
 
+				UE_LOG(LogOnline, Error, TEXT("FinalURL: %s"), *FinalURL);
+
 				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete, InCompletionDelegate);
 				HttpRequest->SetURL(FinalURL);
 				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 				HttpRequest->SetVerb(TEXT("GET"));
+
 				HttpRequest->ProcessRequest();
 			}
 			else

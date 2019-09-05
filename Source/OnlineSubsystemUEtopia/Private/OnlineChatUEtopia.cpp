@@ -82,9 +82,10 @@ const FString& FChatRoomMemberUEtopia::GetNickname() const
 //FChatMessageUEtopia
 
 FChatMessageUEtopia::FChatMessageUEtopia(FString& inplayernickname, FString& inmessagebody, TSharedRef<const FUniqueNetId>& inpid, FDateTime& intimestamp)
-	: playernickname(inplayernickname),
-	messagebody(inmessagebody),
+	: 
 	pid(inpid),
+	playernickname(inplayernickname),
+	messagebody(inmessagebody),
 	timestamp(intimestamp)
 {
 	UE_LOG(LogOnline, Log, TEXT("\t\t FChatMessageUEtopia::FChatMessageUEtopia playernickname (%s)"), *playernickname);
