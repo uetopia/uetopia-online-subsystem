@@ -292,6 +292,12 @@ void FOnlineFriendsUEtopia::RejectInvite_HttpRequestComplete(FHttpRequestPtr Htt
 	return;
 }
 
+void FOnlineFriendsUEtopia::SetFriendAlias(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName, const FString& Alias, const FOnSetFriendAliasComplete& Delegate /* = FOnSetFriendAliasComplete() */)
+{
+	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
+	return;
+}
+
 bool FOnlineFriendsUEtopia::DeleteFriend(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName)
 {
 	TriggerOnDeleteFriendCompleteDelegates(LocalUserNum, false, FriendId, ListName, FString(TEXT("DeleteFriend() is not supported")));
@@ -351,6 +357,37 @@ bool FOnlineFriendsUEtopia::IsFriend(int32 LocalUserNum, const FUniqueNetId& Fri
 	}
 	return false;
 }
+
+void AddRecentPlayers(const FUniqueNetId& UserId, const TArray<FReportPlayedWithUser>& InRecentPlayers, const FString& ListName, const FOnAddRecentPlayersComplete& InCompletionDelegate)
+{
+	return;
+}
+
+void QueryFriendSettings(const FUniqueNetId& LocalUserId, FOnSettingsOperationComplete Delegate) 
+{
+	return;
+}
+
+void UpdateFriendSettings(const FUniqueNetId& LocalUserId, const FFriendSettings& NewSettings, FOnSettingsOperationComplete Delegate) 
+{
+	return;
+}
+
+bool QueryFriendSettings(const FUniqueNetId& UserId, const FString& Source, const FOnQueryFriendSettingsComplete& Delegate = FOnQueryFriendSettingsComplete()) 
+{
+	return false;
+}
+
+bool GetFriendSettings(const FUniqueNetId& UserId, TMap<FString, TSharedRef<FOnlineFriendSettingsSourceData> >& OutSettings) 
+{
+	return false;
+}
+
+bool SetFriendSettings(const FUniqueNetId& UserId, const FString& Source, bool bNeverShowAgain, const FOnSetFriendSettingsComplete& Delegate = FOnSetFriendSettingsComplete()) 
+{
+	return false;
+}
+
 
 bool FOnlineFriendsUEtopia::QueryRecentPlayers(const FUniqueNetId& UserId, const FString& Namespace)
 {

@@ -165,6 +165,11 @@ void FOnlinePartyUEtopia::RestoreParties(const FUniqueNetId& LocalUserId, const 
 	return;
 }
 
+void RestoreInvites(const FUniqueNetId& LocalUserId, const FOnRestoreInvitesComplete& CompletionDelegate)
+{
+	return;
+}
+
 void FOnlinePartyUEtopia::CleanupParties(const FUniqueNetId& LocalUserId, const FOnCleanupPartiesComplete& CompletionDelegate)
 {
 	return;
@@ -454,6 +459,11 @@ void FOnlinePartyUEtopia::LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpReq
 		UE_LOG(LogOnline, Warning, TEXT("Leave Party request failed. %s"), *ErrorStr);
 	}
 	return;
+}
+
+bool LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, bool bSynchronizeLeave, const FOnLeavePartyComplete& Delegate = FOnLeavePartyComplete())
+{
+	return false;
 }
 
 bool FOnlinePartyUEtopia::ApproveJoinRequest(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bIsApproved, int32 DeniedResultCode)
