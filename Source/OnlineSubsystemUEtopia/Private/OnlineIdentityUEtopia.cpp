@@ -5,6 +5,9 @@
 #include "OnlineExternalUIUEtopiaCommon.h"
 #include "OnlineSubsystemUEtopiaTypes.h"
 #include "IPAddress.h"
+#if UE_GAME
+#include "WindowsPlatformApplicationMisc.h"
+#endif
 //#include "SocketSubsystem.h"
 //#include "HttpModule.h"
 //#include "Interfaces/IHttpResponse.h"
@@ -81,12 +84,96 @@ inline FString GenerateRandomUserId(int32 LocalUserNum)
 */
 void FOnlineIdentityUEtopia::Tick(float DeltaTime)
 {
-	// Only tick once per frame
-	//  As of 4.16 this does not exist anymore
-	//TickLogin(DeltaTime);
+	// Only tick once per frame for client
+#if UE_GAME
+	TickLogin(DeltaTime);
+#endif
 	TickRefreshToken(DeltaTime);
 }
 
+
+/**
+* Ticks the registration process handling timeouts, etc.
+*
+* @param DeltaTime the amount of time that has elapsed since last tick
+*/
+void FOnlineIdentityUEtopia::TickLogin(float DeltaTime)
+{
+
+#if UE_GAME
+	if (bHasLoginOutstanding)
+	{
+		UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin bHasLoginOutstanding"));
+		LastCheckElapsedTime += DeltaTime;
+		TotalCheckElapsedTime += DeltaTime;
+		// See if enough time has elapsed in order to check for completion
+		if (LastCheckElapsedTime > 1.f ||
+			// Do one last check if we're getting ready to time out
+			TotalCheckElapsedTime > MaxCheckElapsedTime)
+		{
+			LastCheckElapsedTime = 0.f;
+			FString Title;
+
+			// Find the browser window we spawned which should now be titled with the redirect url
+
+			// 4.24 this was moved from FPlatformMisc to FGenericPlatformApplicationMisc
+			// Hardcoding the url for now
+			FString LoginRedirectUrlHC = "ue4topia.appspot.com/api/v1/login/redirect";
+			if (FWindowsPlatformApplicationMisc::GetWindowTitleMatchingText(*LoginRedirectUrlHC, Title))
+			{
+				UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin GetWindowTitleMatchingText"));
+
+				UE_LOG(LogOnline, Warning, TEXT("FOnlineIdentityUEtopia::TickLogin GetWindowTitleMatchingText Title: %s"), *Title);
+
+				bHasLoginOutstanding = false;
+
+				// Parse access token from the login redirect url
+				FString AccessToken;
+				if (FParse::Value(*Title, TEXT("access_token="), AccessToken) &&
+					!AccessToken.IsEmpty())
+				{
+					UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickLogin Found access_token"));
+					// strip off any url parameters and just keep the token itself
+					FString AccessTokenOnly;
+					if (AccessToken.Split(TEXT("&"), &AccessTokenOnly, NULL))
+					{
+						AccessToken = AccessTokenOnly;
+					}
+					// kick off http request to get user info with the new token
+					TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+					LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNumPendingLogin, AccessToken));
+
+					FString MeUrl = TEXT("https://ue4topia.appspot.com/me?access_token=`token");
+
+					HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete);
+					HttpRequest->SetURL(MeUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase));
+					HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+					HttpRequest->SetVerb(TEXT("GET"));
+					HttpRequest->ProcessRequest();
+				}
+				else
+				{
+					TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
+						FString(TEXT("RegisterUser() failed to parse the user registration results")));
+				}
+			}
+			// Trigger the delegate if we hit the timeout limit
+			else if (TotalCheckElapsedTime > MaxCheckElapsedTime)
+			{
+				bHasLoginOutstanding = false;
+				TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
+					FString(TEXT("RegisterUser() timed out without getting the data")));
+			}
+		}
+		// Reset our time trackers if we are done ticking for now
+		if (!bHasLoginOutstanding)
+		{
+			LastCheckElapsedTime = 0.f;
+			TotalCheckElapsedTime = 0.f;
+		}
+	}
+#endif
+}
 
 bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCredentials& AccountCredentials)
 {
@@ -111,11 +198,20 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 		// Likely this is to solve the windows 10 issue which fails to open the browser window for auth
 		// Keeping the old way commented out for now
 
-		/*
+		// Thanks Epic.  4.24 Broke this again.
+		// Reverting back to the old way of doing this without CEF.
+		// The problem is that Chrome Embedded Framework does not auto-update.
+		// Whatever version Epic uses in the engine build is the version the game is stuck with.
+		// This works fine, until the third party providers (google, facebook, github, etc) change their login flow to require the latest functionality
+		// At which time the login flow breaks.
+
+		// Fuck that.  Just using the native browser on the user's machine.
+
+		
 		// random number to represent client generated state for verification on login
 		State = FString::FromInt(FMath::Rand() % 100000);
 		// auth url to spawn in browser
-		const FString& Command = FString::Printf(TEXT("%s?redirect_uri=%s&client_id=%s&state=%s&response_type=token"),
+		const FString& Command = FString::Printf(TEXT("https://ue4topia.appspot.com/token_login?redirect_uri=%s&client_id=%s&state=%s&response_type=token"),
 		*LoginUrl, *LoginRedirectUrl, *ClientId, *State);
 		UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login - %s"), *LoginUrl);
 		// This should open the browser with the command as the URL
@@ -130,14 +226,15 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 		ErrorStr = FString::Printf(TEXT("Failed to execute command %s"),
 		*Command);
 		}
-		*/
+		
 
 		// Trying to put the login flow stuff in here
 		// Unable to get includes working.  FFS
 		//ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
 		//LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
 
-
+		// This is the new CEF stuff I think
+		/*
 		if (LocalUserNum < 0 || LocalUserNum >= MAX_LOCAL_PLAYERS)
 		{
 			ErrorStr = FString::Printf(TEXT("Invalid LocalUserNum=%d"), LocalUserNum);
@@ -168,6 +265,7 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 				}
 			}
 		}
+		*/
 
 
 	}
@@ -229,7 +327,7 @@ void FOnlineIdentityUEtopia::TickRefreshToken(float DeltaTime)
 		{
 			//UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : RefreshTokenTotalCheckElapsedTime > RefreshTokenMaxCheckElapsedTime"));
 			// space out requests to allow time for completion
-			if (RefreshTokenLastCheckElapsedTime > 10.0f)
+			if (RefreshTokenLastCheckElapsedTime > 5.0f)
 			{
 				UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::TickRefreshToken : REFRESHING"));
 				RefreshTokenLastCheckElapsedTime = 0.f;
@@ -734,7 +832,7 @@ FString FOnlineIdentityUEtopia::GetAuthType() const
 	return AUTH_TYPE_UETOPIA;
 }
 
-void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate)
+void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded /*, FOnProfileRequestComplete InCompletionDelegate */)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::MeUser_HttpRequestComplete"));
 	bool bResult = false;
@@ -884,7 +982,8 @@ void FOnlineIdentityUEtopia::ProfileRequest(int32 LocalUserNum, const FString& A
 
 				UE_LOG(LogOnline, Error, TEXT("FinalURL: %s"), *FinalURL);
 
-				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete, InCompletionDelegate);
+				//HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete, InCompletionDelegate);
+				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete);
 				HttpRequest->SetURL(FinalURL);
 				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 				HttpRequest->SetVerb(TEXT("GET"));

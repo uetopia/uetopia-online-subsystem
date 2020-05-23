@@ -1256,7 +1256,12 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 		const TCHAR* TheIpTChar = *IPAddress;
 		bool isValid = true;
 		int32 PortInt = FCString::Atoi(*Port);
-		NewSessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(ip.Value, PortInt);
+
+		// changed in 4.25
+		//NewSessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(ip.Value, PortInt);
+		NewSessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr();
+		NewSessionInfo->HostAddr->SetIp(ip.Value);
+		NewSessionInfo->HostAddr->SetPort(PortInt);
 
 		key = "session_id";
 		FString session_id = "";
@@ -1399,7 +1404,12 @@ uint32 FOnlineSessionUEtopia::JoinLANSession(int32 PlayerNum, FNamedOnlineSessio
 		// from NULL:
 		uint32 IpAddr;
 		SearchSessionInfo->HostAddr->GetIp(IpAddr);
-		SessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(IpAddr, SearchSessionInfo->HostAddr->GetPort());
+		// Changed in 4.25
+		// SessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr(IpAddr, SearchSessionInfo->HostAddr->GetPort());
+		SessionInfo->HostAddr = ISocketSubsystem::Get()->CreateInternetAddr();
+		SessionInfo->HostAddr->SetIp(IpAddr);
+		SessionInfo->HostAddr->SetPort(SearchSessionInfo->HostAddr->GetPort());
+
 		Result = ONLINE_SUCCESS;
 	}
 

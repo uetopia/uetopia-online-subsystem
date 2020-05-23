@@ -298,6 +298,11 @@ void FOnlineFriendsUEtopia::SetFriendAlias(int32 LocalUserNum, const FUniqueNetI
 	return;
 }
 
+void FOnlineFriendsUEtopia::DeleteFriendAlias(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName, const FOnDeleteFriendAliasComplete& Delegate /*= FOnDeleteFriendAliasComplete() */)
+{
+	return;
+}
+
 bool FOnlineFriendsUEtopia::DeleteFriend(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName)
 {
 	TriggerOnDeleteFriendCompleteDelegates(LocalUserNum, false, FriendId, ListName, FString(TEXT("DeleteFriend() is not supported")));
@@ -358,32 +363,32 @@ bool FOnlineFriendsUEtopia::IsFriend(int32 LocalUserNum, const FUniqueNetId& Fri
 	return false;
 }
 
-void AddRecentPlayers(const FUniqueNetId& UserId, const TArray<FReportPlayedWithUser>& InRecentPlayers, const FString& ListName, const FOnAddRecentPlayersComplete& InCompletionDelegate)
+void FOnlineFriendsUEtopia::AddRecentPlayers(const FUniqueNetId& UserId, const TArray<FReportPlayedWithUser>& InRecentPlayers, const FString& ListName, const FOnAddRecentPlayersComplete& InCompletionDelegate)
 {
 	return;
 }
 
-void QueryFriendSettings(const FUniqueNetId& LocalUserId, FOnSettingsOperationComplete Delegate) 
+void FOnlineFriendsUEtopia::QueryFriendSettings(const FUniqueNetId& LocalUserId, FOnSettingsOperationComplete Delegate)
 {
 	return;
 }
 
-void UpdateFriendSettings(const FUniqueNetId& LocalUserId, const FFriendSettings& NewSettings, FOnSettingsOperationComplete Delegate) 
+void FOnlineFriendsUEtopia::UpdateFriendSettings(const FUniqueNetId& LocalUserId, const FFriendSettings& NewSettings, FOnSettingsOperationComplete Delegate)
 {
 	return;
 }
 
-bool QueryFriendSettings(const FUniqueNetId& UserId, const FString& Source, const FOnQueryFriendSettingsComplete& Delegate = FOnQueryFriendSettingsComplete()) 
+bool FOnlineFriendsUEtopia::QueryFriendSettings(const FUniqueNetId& UserId, const FString& Source, const FOnQueryFriendSettingsComplete& Delegate /*= FOnQueryFriendSettingsComplete()*/ )
 {
 	return false;
 }
 
-bool GetFriendSettings(const FUniqueNetId& UserId, TMap<FString, TSharedRef<FOnlineFriendSettingsSourceData> >& OutSettings) 
+bool FOnlineFriendsUEtopia::GetFriendSettings(const FUniqueNetId& UserId, TMap<FString, TSharedRef<FOnlineFriendSettingsSourceData> >& OutSettings)
 {
 	return false;
 }
 
-bool SetFriendSettings(const FUniqueNetId& UserId, const FString& Source, bool bNeverShowAgain, const FOnSetFriendSettingsComplete& Delegate = FOnSetFriendSettingsComplete()) 
+bool FOnlineFriendsUEtopia::SetFriendSettings(const FUniqueNetId& UserId, const FString& Source, bool bNeverShowAgain, const FOnSetFriendSettingsComplete& Delegate /*= FOnSetFriendSettingsComplete() */)
 {
 	return false;
 }

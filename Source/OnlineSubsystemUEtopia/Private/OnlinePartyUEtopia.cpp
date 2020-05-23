@@ -165,7 +165,7 @@ void FOnlinePartyUEtopia::RestoreParties(const FUniqueNetId& LocalUserId, const 
 	return;
 }
 
-void RestoreInvites(const FUniqueNetId& LocalUserId, const FOnRestoreInvitesComplete& CompletionDelegate)
+void FOnlinePartyUEtopia::RestoreInvites(const FUniqueNetId& LocalUserId, const FOnRestoreInvitesComplete& CompletionDelegate)
 {
 	return;
 }
@@ -341,6 +341,7 @@ bool FOnlinePartyUEtopia::UpdateParty(const FUniqueNetId& LocalUserId, const FOn
 bool FOnlinePartyUEtopia::JoinParty(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnJoinPartyComplete& Delegate /*= FOnJoinPartyComplete() */)
 {
 	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
+
 	return false;
 }
 
@@ -461,7 +462,7 @@ void FOnlinePartyUEtopia::LeaveParty_HttpRequestComplete(FHttpRequestPtr HttpReq
 	return;
 }
 
-bool LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, bool bSynchronizeLeave, const FOnLeavePartyComplete& Delegate = FOnLeavePartyComplete())
+bool FOnlinePartyUEtopia::LeaveParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, bool bSynchronizeLeave, const FOnLeavePartyComplete& Delegate /*= FOnLeavePartyComplete() */)
 {
 	return false;
 }

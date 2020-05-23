@@ -330,7 +330,7 @@ private:
 	*
 	* @param DeltaTime the amount of time that has elapsed since last tick
 	*/
-	//void TickLogin(float DeltaTime);
+	void TickLogin(float DeltaTime);
 
 	/**
 	 * Should use the initialization constructor instead
@@ -354,8 +354,13 @@ private:
 	/**
 	* Delegate called when a user /me request from uetopia is complete
 	*/
+	// This was old and commented out...
 	//void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
-	void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate);
+	// This was active in 4.23 but throws an error now.
+	//void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded, FOnProfileRequestComplete InCompletionDelegate);
+
+	// reverting back to the old one
+	void MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bSucceeded);
 
 	/**
 	* Request a Token Refresh from the backend
