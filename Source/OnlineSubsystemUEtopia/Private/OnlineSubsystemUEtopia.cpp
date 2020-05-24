@@ -16,7 +16,7 @@
 #include "OnlineExternalUIInterfaceUEtopia.h"
 //#include "OnlineExternalUIUEtopiaCommon.h"
 #include "VoiceInterfaceImpl.h"
-#include "LambdaRunnable.h"
+#include "CULambdaRunnable.h"
 #include "SIOJConvert.h"
 #include "SocketIOClient.h"
 #include "OnlineAchievementsInterfaceUEtopia.h"
@@ -356,7 +356,7 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 
 	NativeClient->OnConnectedCallback = [this](const FString& InSessionId)
 	{
-		FLambdaRunnable::RunShortLambdaOnGameThread([this, InSessionId]
+		FCULambdaRunnable::RunShortLambdaOnGameThread([this, InSessionId]
 		{
 			if (this)
 			{
@@ -376,7 +376,7 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 
 	NativeClient->OnNamespaceConnectedCallback = [this](const FString& Namespace)
 	{
-		FLambdaRunnable::RunShortLambdaOnGameThread([this, Namespace]
+		FCULambdaRunnable::RunShortLambdaOnGameThread([this, Namespace]
 		{
 			if (this)
 			{
@@ -415,7 +415,7 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 
 	NativeClient->OnDisconnectedCallback = [this](const ESIOConnectionCloseReason Reason)
 	{
-		FLambdaRunnable::RunShortLambdaOnGameThread([ this, Reason]
+		FCULambdaRunnable::RunShortLambdaOnGameThread([ this, Reason]
 		{
 			if (this)
 			{
@@ -430,7 +430,7 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 
 	NativeClient->OnNamespaceDisconnectedCallback = [this](const FString& Namespace)
 	{
-		FLambdaRunnable::RunShortLambdaOnGameThread([this, Namespace]
+		FCULambdaRunnable::RunShortLambdaOnGameThread([this, Namespace]
 		{
 			if (this)
 			{
