@@ -222,6 +222,9 @@ bool FOnlineSubsystemUEtopia::Init()
 
 	// TODO set up the destructor stuff for this
 
+	// Testing 8/6/20 - this should only run on the client.
+
+#if !UE_EDITOR
 
 	if (FPaths::FileExists(_configPath))
 	{
@@ -267,6 +270,7 @@ bool FOnlineSubsystemUEtopia::Init()
 	{
 		Shutdown();
 	}
+#endif
 
 	return bUEtopiaInit;
 }
