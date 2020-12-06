@@ -58,6 +58,7 @@ public:
 	virtual IOnlineTimePtr GetTimeInterface() const override;
 	virtual IOnlineIdentityPtr GetIdentityInterface() const override;
 	virtual IOnlineTitleFilePtr GetTitleFileInterface() const override;
+	// deprecated in 4.26 - Unused
 	virtual IOnlineStorePtr GetStoreInterface() const override;
 	virtual IOnlineStoreV2Ptr GetStoreV2Interface() const override { return nullptr; }   // 4.11
 	virtual IOnlinePurchasePtr GetPurchaseInterface() const override { return nullptr; } // 4.11

@@ -181,7 +181,8 @@ void FOnlineSharingUEtopiaCommon::RequestCurrentPermissions(int32 LocalUserNum, 
 				// kick off http request to get user info with the access token
 				FString FinalURL = PermissionsURL.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
 
-				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+				// this changed in 4.26
+				TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineSharingUEtopiaCommon::Permissions_HttpComplete, LocalUserNum, CompletionDelegate);
 				HttpRequest->SetURL(FinalURL);
 				HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));

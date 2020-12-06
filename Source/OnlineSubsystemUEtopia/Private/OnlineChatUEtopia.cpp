@@ -156,7 +156,8 @@ bool FOnlineChatUEtopia::CreateRoom(const FUniqueNetId& UserId, const FChatRoomI
 	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
 
 	// kick off http request to read friends
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::CreateRoom_HttpRequestComplete);
 	FString ChatSubsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/channelCreate");
 
@@ -213,7 +214,8 @@ bool FOnlineChatUEtopia::JoinPublicRoom(const FUniqueNetId& UserId, const FChatR
 	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
 
 	// kick off http request to read friends
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::JoinPublicRoom_HttpRequestComplete);
 	FString ChatSubsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/channelConnect");
 
@@ -270,7 +272,8 @@ bool FOnlineChatUEtopia::ExitRoom(const FUniqueNetId& UserId, const FChatRoomId&
 	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
 
 	// kick off http request to read friends
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::ExitRoom_HttpRequestComplete);
 	FString ChatSubsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/channelDetach");
 
@@ -317,7 +320,8 @@ bool FOnlineChatUEtopia::SendRoomChat(const FUniqueNetId& UserId, const FChatRoo
 
 
 	// kick off http request
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::SendRoomChat_HttpRequestComplete);
 	FString ChatMessageCreateUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/messageCreate");
 
@@ -363,7 +367,8 @@ bool FOnlineChatUEtopia::SendPrivateChat(const FUniqueNetId& UserId, const FUniq
 
 
 	// kick off http request
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::SendRoomChat_HttpRequestComplete);
 	FString ChatMessageCreateUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/messageCreate");
 
@@ -479,7 +484,8 @@ bool FOnlineChatUEtopia::ReadJoinedRooms(int32 LocalUserNum)
 	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
 
 	// kick off http request to read friends
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineChatUEtopia::ReadJoinedRooms_HttpRequestComplete);
 	FString ChatSubsUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/chat/v1/channelSubscriberCollection");
 

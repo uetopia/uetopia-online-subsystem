@@ -104,8 +104,8 @@ bool FOnlineTournamentSystemUEtopia::CreateTournament(const FUniqueNetId& LocalU
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -256,8 +256,8 @@ bool FOnlineTournamentSystemUEtopia::FetchJoinableTournaments()
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -423,8 +423,8 @@ bool FOnlineTournamentSystemUEtopia::ReadTournamentDetails(int32 LocalUserNum, c
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -627,7 +627,8 @@ bool FOnlineTournamentSystemUEtopia::JoinTournament(int32 LocalUserNum, const FU
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 
 	// Optional list of fields to query for each friend
 	FString FieldsStr;

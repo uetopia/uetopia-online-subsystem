@@ -96,6 +96,12 @@ const FString& IOnlinePartyJoinInfoUEtopia::GetSourcePlatform() const
  	return genericString;
 }
 
+// Added in 4.26
+const FString& IOnlinePartyJoinInfoUEtopia::GetPlatformData() const
+{
+	return genericString;
+}
+
 TSharedRef<const FUniqueNetId> IOnlinePartyJoinInfoUEtopia::GetSourceUserId() const
 {
 	return LeaderId;
@@ -189,8 +195,8 @@ bool FOnlinePartyUEtopia::CreateParty(const FUniqueNetId& LocalUserId, const FOn
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -340,7 +346,60 @@ bool FOnlinePartyUEtopia::UpdateParty(const FUniqueNetId& LocalUserId, const FOn
 
 bool FOnlinePartyUEtopia::JoinParty(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnJoinPartyComplete& Delegate /*= FOnJoinPartyComplete() */)
 {
-	//Delegate.ExecuteIfBound(LocalUserNum, false, ListName, FString(TEXT("DeleteFriendsList() is not supported")));
+	FString AccessToken;
+	FString ErrorStr;
+
+	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
+	if (AccessToken.IsEmpty())
+	{
+		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
+	}
+
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
+
+	// Optional list of fields to query for each friend
+	FString FieldsStr;
+
+	// build the url
+	//FString FriendsQueryUrl = FriendsUrl.Replace(TEXT("`fields"), *FieldsStr, ESearchCase::IgnoreCase);
+	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
+
+	// kick off http request to reject the invite
+	// Using the reject complete function for now since we don't care too much about the result
+	// TODO do we need to do anything specific on AcceptComplete?
+	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete);
+	FString InviteRejectUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/userInviteAccept");
+
+
+	// since moving this to Join party in 4.26 SenderId is no longer available
+
+	// FString SenderIdStr = SenderId.ToString();
+
+	// instead we have OnlinePartyJoinInfo
+	// guessing here...  this might work
+	
+	FString SenderIdStr = OnlinePartyJoinInfo.GetSourceUserId().Get().ToString();
+	UE_LOG_ONLINE(Log, TEXT("SenderIdStr: %s"), *SenderIdStr);
+
+
+	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
+
+	RequestJsonObj->SetStringField("userKeyIdStr", SenderIdStr);
+
+	FString JsonOutputString;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	//FString OutputString = "GameKeyId=" + GameKey;
+	HttpRequest->SetURL(InviteRejectUrlHardcoded);
+	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
+	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
+	HttpRequest->SetContentAsString(JsonOutputString);
+	HttpRequest->SetVerb(TEXT("POST"));
+	return HttpRequest->ProcessRequest();
 
 	return false;
 }
@@ -375,7 +434,8 @@ bool FOnlinePartyUEtopia::LeaveParty(const FUniqueNetId& LocalUserId, const FOnl
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 
 	// Optional list of fields to query for each friend
 	FString FieldsStr;
@@ -499,7 +559,8 @@ bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const 
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 
 	// Optional list of fields to query for each friend
 	FString FieldsStr;
@@ -590,56 +651,6 @@ void FOnlinePartyUEtopia::SendInvitation_HttpRequestComplete(FHttpRequestPtr Htt
 	return;
 }
 
-bool FOnlinePartyUEtopia::AcceptInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId)
-{
-	FString AccessToken;
-	FString ErrorStr;
-
-	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(0);
-	if (AccessToken.IsEmpty())
-	{
-		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
-	}
-
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
-
-	// Optional list of fields to query for each friend
-	FString FieldsStr;
-
-	// build the url
-	//FString FriendsQueryUrl = FriendsUrl.Replace(TEXT("`fields"), *FieldsStr, ESearchCase::IgnoreCase);
-	//FriendsQueryUrl = FriendsQueryUrl.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);
-
-	// kick off http request to reject the invite
-	// Using the reject complete function for now since we don't care too much about the result
-	// TODO do we need to do anything specific on AcceptComplete?
-	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete);
-	FString InviteRejectUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/teams/v1/userInviteAccept");
-
-
-	FString SenderIdStr = SenderId.ToString();
-	UE_LOG_ONLINE(Log, TEXT("SenderIdStr: %s"), *SenderIdStr);
-
-
-	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
-
-	RequestJsonObj->SetStringField("userKeyIdStr", SenderIdStr);
-
-	FString JsonOutputString;
-	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
-	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
-
-	//FString OutputString = "GameKeyId=" + GameKey;
-	HttpRequest->SetURL(InviteRejectUrlHardcoded);
-	HttpRequest->SetHeader("User-Agent", "UETOPIA_UE4_API_CLIENT/1.0");
-	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json; charset=utf-8"));
-	HttpRequest->SetHeader(TEXT("x-uetopia-auth"), AccessToken);
-	HttpRequest->SetContentAsString(JsonOutputString);
-	HttpRequest->SetVerb(TEXT("POST"));
-	return HttpRequest->ProcessRequest();
-}
 
 bool FOnlinePartyUEtopia::RejectInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId)
 {
@@ -652,8 +663,8 @@ bool FOnlinePartyUEtopia::RejectInvitation(const FUniqueNetId& LocalUserId, cons
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), 0);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -723,28 +734,10 @@ void FOnlinePartyUEtopia::RejectInvitation_HttpRequestComplete(FHttpRequestPtr H
 	return;
 }
 
-
-
-
 void FOnlinePartyUEtopia::ClearInvitations(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId, const FOnlinePartyId* PartyId)
 {
 	return;
 }
-
-
-void FOnlinePartyUEtopia::ApproveUserForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& ApprovedUserId)
-{
-	return;
-}
-void FOnlinePartyUEtopia::RemoveUserForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RemovedUserId)
-{
-	return;
-}
-void FOnlinePartyUEtopia::GetUsersApprovedForRejoin(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<const FUniqueNetId>>& OutApprovedUserIds)
-{
-	return;
-}
-
 
 bool FOnlinePartyUEtopia::KickMember(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& TargetMemberId, const FOnKickPartyMemberComplete& Delegate /*= FOnKickPartyMemberComplete()*/)
 {
@@ -775,7 +768,17 @@ bool FOnlinePartyUEtopia::UpdatePartyData(const FUniqueNetId& LocalUserId, const
 	return false;
 }
 
+bool FOnlinePartyUEtopia::UpdatePartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FName& Namespace, const FOnlinePartyData& PartyData)
+{
+	return false;
+}
+
 bool FOnlinePartyUEtopia::UpdatePartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyData& PartyMemberData)
+{
+	return false;
+}
+
+bool FOnlinePartyUEtopia::UpdatePartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FName& Namespace, const FOnlinePartyData& PartyMemberData)
 {
 	return false;
 }
@@ -810,7 +813,17 @@ FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& L
 	return nullptr;
 }
 
+FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FName& Namespace) const
+{
+	return nullptr;
+}
+
 FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
+{
+	return nullptr;
+}
+
+FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId, const FName& Namespace) const
 {
 	return nullptr;
 }
@@ -825,20 +838,9 @@ bool FOnlinePartyUEtopia::GetJoinedParties(const FUniqueNetId& LocalUserId, TArr
 	return false;
 }
 
-bool FOnlinePartyUEtopia::GetPartyMembers(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<FOnlinePartyMember>>& OutPartyMembersArray) const
-{
-	return false;
-}
-
 bool FOnlinePartyUEtopia::GetPartyMembers(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<FOnlinePartyMemberConstRef>& OutPartyMembersArray) const
 {
 	return false;
-}
-
-bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TArray<TSharedRef<IOnlinePartyJoinInfo>>& OutPendingInvitesArray) const
-{
-	OutPendingInvitesArray = PendingInvitesArray;
-	return true;
 }
 
 bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TArray<IOnlinePartyJoinInfoConstRef>& OutPendingInvitesArray) const
@@ -848,12 +850,7 @@ bool FOnlinePartyUEtopia::GetPendingInvites(const FUniqueNetId& LocalUserId, TAr
 	return false;
 }
 
-bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<IOnlinePartyPendingJoinRequestInfo>>& OutPendingJoinRequestArray) const
-{
-	return false;
-}
-
-bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<IOnlinePartyPendingJoinRequestInfoConstRef>& OutPendingJoinRequestArray) const
+bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<IOnlinePartyPendingJoinRequestInfoConstRef>& OutPendingJoinRequestArra) const
 {
 	return false;
 }
@@ -910,7 +907,7 @@ bool FOnlinePartyUEtopia::FetchJoinedParties()
 	}
 
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -927,14 +924,21 @@ bool FOnlinePartyUEtopia::FetchJoinedParties()
 	FString GameKey = UEtopiaSubsystem->GetGameKey();
 	UE_LOG_ONLINE(Log, TEXT("GameKey: %s"), *GameKey);
 
+	// this changed in 4.26
 	TSharedPtr<FJsonObject> RequestJsonObj = MakeShareable(new FJsonObject);
 	RequestJsonObj->SetStringField("gameKeyIdStr", GameKey);
 	//int32 GameKeyIdInt = FCString::Atoi(*GameKey);
 	//RequestJsonObj->SetNumberField("gameKeyId", GameKeyIdInt);
 
 	FString JsonOutputString;
-	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
-	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), Writer);
+
+	// ?? this changed in 4.26?
+	// auto JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR> >::Create(&PayloadJsonStr);
+	// FJsonSerializer::Serialize(JsonObject, JsonWriter);
+
+	// TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonOutputString);
+	auto JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR> >::Create(&JsonOutputString);
+	FJsonSerializer::Serialize(RequestJsonObj.ToSharedRef(), JsonWriter);
 
 	//FString OutputString = "GameKeyId=" + GameKey;
 	HttpRequest->SetURL(TeamsUrlHardcoded);

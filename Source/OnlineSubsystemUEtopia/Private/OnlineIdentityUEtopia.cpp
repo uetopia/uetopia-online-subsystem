@@ -140,7 +140,7 @@ void FOnlineIdentityUEtopia::TickLogin(float DeltaTime)
 						AccessToken = AccessTokenOnly;
 					}
 					// kick off http request to get user info with the new token
-					TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+					TSharedRef<class IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 					LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNumPendingLogin, AccessToken));
 
 					FString MeUrl = TEXT("https://ue4topia.appspot.com/me?access_token=`token");
@@ -333,7 +333,8 @@ void FOnlineIdentityUEtopia::TickRefreshToken(float DeltaTime)
 				RefreshTokenLastCheckElapsedTime = 0.f;
 
 				// kick off http request to get user info with the new token
-				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+				// this changed in 4.26
+				TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 
 				HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::TokenRefresh_HttpRequestComplete);
 				FString RefreshUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/users/v1/refreshToken");
@@ -970,7 +971,8 @@ void FOnlineIdentityUEtopia::ProfileRequest(int32 LocalUserNum, const FString& A
 				// https://answers.unrealengine.com/questions/888070/http-requests-not-working-in-plugin.html
 				// The fix is to use VS 2019
 
-				TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+				// this changed in 4.26
+				TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 				LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNum, AccessToken));
 
 				FString FinalURL = MeURL.Replace(TEXT("`token"), *AccessToken, ESearchCase::IgnoreCase);

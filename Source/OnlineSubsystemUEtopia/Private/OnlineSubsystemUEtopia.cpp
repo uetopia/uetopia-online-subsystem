@@ -903,7 +903,11 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 		TSharedRef<const FOnlinePartyIdUEtopia> PartyIdPtr = MakeShareable(new FOnlinePartyIdUEtopia(partyKeyIdConst));
 
 		// Changed in 4.23
-		this->GetPartyInterface()->TriggerOnPartyDataReceivedDelegates(*localUNetId, *PartyIdPtr, *PartyData);
+		// Changed in 4.26 - added namespace
+		// this is the PARTY namespace...  NOT the socketIO namespace which is used above.
+		// We're not using this as far as I know...  
+
+		this->GetPartyInterface()->TriggerOnPartyDataReceivedDelegates(*localUNetId, *PartyIdPtr, "", *PartyData);
 
 
 	}, FString("/"));
@@ -1086,7 +1090,8 @@ bool FOnlineSubsystemUEtopia::PostLoginBackendProcess()
 
 	FString AccessToken = IdentityInterface->GetAuthToken(0);
 
-	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<class IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FString GameKey = GetGameKey();
 	//FString APIURL = GetAPIURL();
 	FString SessionQueryUrl = "https://ue4topia.appspot.com/_ah/api/users/v1/postLoginProcess";

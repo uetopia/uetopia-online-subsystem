@@ -135,7 +135,8 @@ bool FOnlineFriendsUEtopia::ReadFriendsList(int32 LocalUserNum, const FString& L
 		return false;
 	}
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// Optional list of fields to query for each friend
@@ -200,8 +201,8 @@ bool FOnlineFriendsUEtopia::AcceptInvite(int32 LocalUserNum, const FUniqueNetId&
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), LocalUserNum);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// kick off http request to process the invite
@@ -254,8 +255,8 @@ bool FOnlineFriendsUEtopia::RejectInvite(int32 LocalUserNum, const FUniqueNetId&
 		ErrorStr = FString::Printf(TEXT("Invalid access token for LocalUserNum=%d."), LocalUserNum);
 	}
 
-
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	//FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 	// kick off http request to process the invite
@@ -429,7 +430,8 @@ bool FOnlineFriendsUEtopia::QueryRecentPlayers(const FUniqueNetId& UserId, const
 		return false;
 	}
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	FriendsQueryRequests.Add(&HttpRequest.Get(), FPendingFriendsQuery(LocalUserNum));
 
 
@@ -767,7 +769,8 @@ bool FOnlineFriendsUEtopia::SendInvite(int32 LocalUserNum, const FUniqueNetId& F
 	FString AccessToken;
 	AccessToken = UEtopiaSubsystem->GetIdentityInterface()->GetAuthToken(LocalUserNum);
 
-	TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	// this changed in 4.26
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineFriendsUEtopia::SendInvite_HttpRequestComplete, Delegate);
 	FString SendInviteUrlHardcoded = TEXT("https://ue4topia.appspot.com/_ah/api/user_relationships/v1/create");
 
