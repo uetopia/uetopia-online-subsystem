@@ -194,78 +194,62 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 	}
 	else
 	{
-		// As of 4.16.x The facebook subsystem does this totally different.
-		// Likely this is to solve the windows 10 issue which fails to open the browser window for auth
-		// Keeping the old way commented out for now
 
-		// Thanks Epic.  4.24 Broke this again.
-		// Reverting back to the old way of doing this without CEF.
-		// The problem is that Chrome Embedded Framework does not auto-update.
-		// Whatever version Epic uses in the engine build is the version the game is stuck with.
-		// This works fine, until the third party providers (google, facebook, github, etc) change their login flow to require the latest functionality
-		// At which time the login flow breaks.
+		// 6/27/2021 - Before opening the browser to do auth manually.
+		// FIrst check to see if the launcher already has a token for us.
+#if UE_GAME
+		FString Title;
 
-		// Fuck that.  Just using the native browser on the user's machine.
+		// Find the browser window we spawned which should now be titled with the redirect url
 
-		
-		// random number to represent client generated state for verification on login
-		State = FString::FromInt(FMath::Rand() % 100000);
-		// auth url to spawn in browser
-		const FString& Command = FString::Printf(TEXT("https://ue4topia.appspot.com/token_login?redirect_uri=%s&client_id=%s&state=%s&response_type=token"),
-		*LoginUrl, *LoginRedirectUrl, *ClientId, *State);
-		UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login - %s"), *LoginUrl);
-		// This should open the browser with the command as the URL
-		if (FPlatformMisc::OsExecute(TEXT("open"), *Command))
+		// 4.24 this was moved from FPlatformMisc to FGenericPlatformApplicationMisc
+		// Hardcoding the url for now
+		FString UetopiaLauncherTitle = "UETOPIA_AUTH:";
+		if (FWindowsPlatformApplicationMisc::GetWindowTitleMatchingText(*UetopiaLauncherTitle, Title))
 		{
-		// keep track of local user requesting registration
-		LocalUserNumPendingLogin = LocalUserNum;
-		bHasLoginOutstanding = true;
+			UE_LOG_ONLINE(Display, TEXT("Login got UetopiaLauncherTitle"));
+
+			// strip the access token out of the title
+			FString Junk, Access_Token;
+			Title.Split(TEXT(":"), &Junk, &Access_Token);
+
+			bHasLoginOutstanding = false;
+
+			// kick off http request to get user info with the new token
+			TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+			LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNumPendingLogin, Access_Token));
+
+			FString MeUrl = TEXT("https://uetopia.com/me?access_token=`token");
+
+			HttpRequest->OnProcessRequestComplete().BindRaw(this, &FOnlineIdentityUEtopia::MeUser_HttpRequestComplete);
+			HttpRequest->SetURL(MeUrl.Replace(TEXT("`token"), *Access_Token, ESearchCase::IgnoreCase));
+			HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+			HttpRequest->SetVerb(TEXT("GET"));
+			HttpRequest->ProcessRequest();
+
 		}
 		else
 		{
-		ErrorStr = FString::Printf(TEXT("Failed to execute command %s"),
-		*Command);
-		}
-		
-
-		// Trying to put the login flow stuff in here
-		// Unable to get includes working.  FFS
-		//ILoginFlowModule& LoginFlowModule = ILoginFlowModule::Get();
-		//LoginFlowManager = LoginFlowModule.CreateLoginFlowManager();
-
-		// This is the new CEF stuff I think
-		/*
-		if (LocalUserNum < 0 || LocalUserNum >= MAX_LOCAL_PLAYERS)
-		{
-			ErrorStr = FString::Printf(TEXT("Invalid LocalUserNum=%d"), LocalUserNum);
-		}
-		else
-		{
-			if (!AccountCredentials.Id.IsEmpty() && !AccountCredentials.Token.IsEmpty() && AccountCredentials.Type == GetAuthType())
+			// random number to represent client generated state for verification on login
+			State = FString::FromInt(FMath::Rand() % 100000);
+			// auth url to spawn in browser
+			const FString& Command = FString::Printf(TEXT("https://uetopia.com/token_login?redirect_uri=%s&client_id=%s&state=%s&response_type=token"),
+				*LoginUrl, *LoginRedirectUrl, *ClientId, *State);
+			UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityUEtopia::Login - %s"), *LoginUrl);
+			// This should open the browser with the command as the URL
+			if (FPlatformMisc::OsExecute(TEXT("open"), *Command))
 			{
+				// keep track of local user requesting registration
+				LocalUserNumPendingLogin = LocalUserNum;
 				bHasLoginOutstanding = true;
-
-				Login(LocalUserNum, AccountCredentials.Token, FOnLoginCompleteDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnAccessTokenLoginComplete));
 			}
 			else
 			{
-				IOnlineExternalUIPtr OnlineExternalUI = UEtopiaSubsystem->GetExternalUIInterface();
-				if (OnlineExternalUI.IsValid())
-				{
-					LoginURLDetails.GenerateNonce();
-
-					bHasLoginOutstanding = true;
-
-					FOnLoginUIClosedDelegate CompletionDelegate = FOnLoginUIClosedDelegate::CreateRaw(this, &FOnlineIdentityUEtopia::OnExternalUILoginComplete);
-					OnlineExternalUI->ShowLoginUI(LocalUserNum, true, true, CompletionDelegate);
-				}
-				else
-				{
-					ErrorStr = FString::Printf(TEXT("External interface missing"));
-				}
+				ErrorStr = FString::Printf(TEXT("Failed to execute command %s"),
+					*Command);
 			}
 		}
-		*/
+#endif
 
 
 	}
