@@ -216,7 +216,8 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 			bHasLoginOutstanding = false;
 
 			// kick off http request to get user info with the new token
-			TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+			// this changed in 4.26
+			TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 			LoginUserRequests.Add(&HttpRequest.Get(), FPendingLoginUser(LocalUserNumPendingLogin, Access_Token));
 
 			FString MeUrl = TEXT("https://uetopia.com/me?access_token=`token");
