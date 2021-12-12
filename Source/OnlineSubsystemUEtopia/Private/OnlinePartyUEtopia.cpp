@@ -414,6 +414,11 @@ void FOnlinePartyUEtopia::QueryPartyJoinability(const FUniqueNetId& LocalUserId,
 	return;
 }
 
+void FOnlinePartyUEtopia::QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityCompleteEx& Delegate)
+{
+	return;
+}
+
 bool FOnlinePartyUEtopia::RejoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyTypeId& PartyTypeId, const TArray<TSharedRef<const FUniqueNetId>>& FormerMembers, const FOnJoinPartyComplete& Delegate /*= FOnJoinPartyComplete() */)
 {
 	return false;
@@ -541,6 +546,12 @@ void FOnlinePartyUEtopia::RespondToQueryJoinability(const FUniqueNetId& LocalUse
 {
 	return;
 }
+
+void FOnlinePartyUEtopia::RespondToQueryJoinability(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bCanJoin, int32 DeniedResultCode, FOnlinePartyDataConstPtr PartyData)
+{
+	return;
+}
+
 
 //changed in 4.20
 //bool FOnlinePartyUEtopia::SendInvitation(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyInvitationRecipient& Recipient, const FOnlinePartyData& ClientData /*= FOnlinePartyData()*/, const FOnSendPartyInvitationComplete& Delegate /*= FOnSendPartyInvitationComplete()*/)
