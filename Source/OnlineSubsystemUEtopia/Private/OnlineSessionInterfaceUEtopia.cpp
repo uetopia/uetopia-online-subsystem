@@ -15,6 +15,9 @@
 
 FOnlineSessionInfoUEtopia::FOnlineSessionInfoUEtopia() :
 	HostAddr(NULL),
+	// changed in 5.0
+	// this is how oss steam does it:  FUniqueNetIdSteam::Create((uint64)0)
+	// Can't get the syntax right on this
 	SessionId(TEXT("INVALID"))
 {
 }
@@ -43,7 +46,10 @@ void FOnlineSessionInfoUEtopia::Init(const FOnlineSubsystemUEtopia& Subsystem)
 
 	FGuid OwnerGuid;
 	FPlatformMisc::CreateGuid(OwnerGuid);
-	SessionId = FUniqueNetIdString(OwnerGuid.ToString(), TEXT("UEtopia"));
+
+	// this changed in 5.0
+	//SessionId = FUniqueNetIdString(OwnerGuid.ToString(), TEXT("UEtopia"));
+	SessionId = *FUniqueNetIdString::Create(OwnerGuid.ToString(), TEXT("UEtopia"));
 
 
 
@@ -219,7 +225,9 @@ bool FOnlineSessionUEtopia::CreateSession(int32 HostingPlayerNum, FName SessionN
 		// if did not get a valid one, use just something
 		if (!Session->OwningUserId.IsValid())
 		{
-			Session->OwningUserId = MakeShareable(new FUniqueNetIdString(FString::Printf(TEXT("%d"), HostingPlayerNum, TEXT("UEtopia"))));
+			// CHanged in 5.0
+			// Session->OwningUserId = MakeShareable(new FUniqueNetIdString(FString::Printf(TEXT("%d"), HostingPlayerNum, TEXT("UEtopia"))));
+			Session->OwningUserId = FUniqueNetIdString::Create(TEXT("%d"), TEXT("UEtopia"));
 			Session->OwningUserName = FString(TEXT("UEtopiaUser"));
 		}
 
@@ -1268,7 +1276,10 @@ bool FOnlineSessionUEtopia::JoinSession(int32 PlayerNum, FName SessionName, cons
 		FString session_id = "";
 		Session->SessionSettings.Get(key, session_id);
 		const FString session_id_const = session_id;
+
+		// this changed in 5.0 - but can't get the syntax right on this one
 		FUniqueNetIdString *session_id_str = new FUniqueNetIdString(session_id_const, TEXT("UEtopia"));
+		//FUniqueNetIdString session_id_str = FUniqueNetIdString::Create(session_id_const, TEXT("UEtopia"));
 
 		NewSessionInfo->SetSessionId(session_id_str);
 
@@ -1485,7 +1496,7 @@ bool FOnlineSessionUEtopia::GetResolvedConnectString(const class FOnlineSessionS
 	{
 		TSharedPtr<FOnlineSessionInfoUEtopia> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoUEtopia>(SearchResult.Session.SessionInfo);
 
-		if (PortType == BeaconPort)
+		if (PortType == NAME_BeaconPort)
 		{
 			int32 BeaconListenPort = 15000;
 			if (SearchResult.Session.SessionSettings.Get(SETTING_BEACONPORT, BeaconListenPort) && BeaconListenPort > 0)
@@ -1493,7 +1504,7 @@ bool FOnlineSessionUEtopia::GetResolvedConnectString(const class FOnlineSessionS
 				bSuccess = GetConnectStringFromSessionInfo(SessionInfo, ConnectInfo, BeaconListenPort);
 			}
 		}
-		else if (PortType == GamePort)
+		else if (PortType == NAME_GamePort)
 		{
 			bSuccess = GetConnectStringFromSessionInfo(SessionInfo, ConnectInfo);
 		}
@@ -1571,7 +1582,11 @@ bool FOnlineSessionUEtopia::RegisterPlayer(FName SessionName, const FUniqueNetId
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Register Player"));
 	TArray< TSharedRef<const FUniqueNetId> > Players;
-	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
+
+	// this changed in 5.0
+	//Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
+	Players.Add(PlayerId.AsShared());
+
 	return RegisterPlayers(SessionName, Players, bWasInvited);
 }
 
@@ -1629,7 +1644,14 @@ bool FOnlineSessionUEtopia::UnregisterPlayer(FName SessionName, const FUniqueNet
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session UNRegister Player"));
 	TArray< TSharedRef<const FUniqueNetId> > Players;
-	Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
+
+	// Changed in 5.0
+	// Players.Add(MakeShareable(new FUniqueNetIdString(PlayerId.ToString(), TEXT("UEtopia"))));
+	// guessing->  Players.Add(MakeShareable(FUniqueNetIdString::Create(PlayerId.ToString(), TEXT("UEtopia"))));
+
+	// From online susbsystem steam:  testing....
+	Players.Add(PlayerId.AsShared());
+
 	return UnregisterPlayers(SessionName, Players);
 }
 

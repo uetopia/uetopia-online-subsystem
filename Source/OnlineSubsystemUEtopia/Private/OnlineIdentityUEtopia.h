@@ -51,8 +51,10 @@ public:
 		: UserIdPtr(new FUniqueNetIdString(InUserId))
 	{ }
 	*/
+	// this changed in 5.0
 	FUserOnlineAccountUEtopia(const FString& InUserId = TEXT(""), const FString& InAuthTicket = TEXT(""))
-		: UserIdPtr(new FUniqueNetIdString(InUserId, TEXT("UEtopia")))
+		//: UserIdPtr(new FUniqueNetIdString(InUserId, TEXT("UEtopia")))
+		: UserIdPtr(FUniqueNetIdString::Create(InUserId, TEXT("UEtopia")))
 		, UserId(InUserId)
 		, AuthTicket(InAuthTicket)
 	{ }

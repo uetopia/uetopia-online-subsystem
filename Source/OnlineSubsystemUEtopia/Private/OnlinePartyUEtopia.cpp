@@ -404,6 +404,16 @@ bool FOnlinePartyUEtopia::JoinParty(const FUniqueNetId& LocalUserId, const IOnli
 	return false;
 }
 
+void FOnlinePartyUEtopia::RequestToJoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId PartyTypeId, const FPartyInvitationRecipient& Recipient, const FOnRequestToJoinPartyComplete& Delegate /*= FOnRequestToJoinPartyComplete()*/)
+{
+	return;
+}
+
+void FOnlinePartyUEtopia::ClearRequestToJoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& Sender, EPartyRequestToJoinRemovedReason Reason)
+{
+	return;
+}
+
 bool FOnlinePartyUEtopia::JIPFromWithinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& PartyLeaderId)
 {
 	return false;
@@ -867,6 +877,11 @@ bool FOnlinePartyUEtopia::GetPendingJoinRequests(const FUniqueNetId& LocalUserId
 }
 
 bool FOnlinePartyUEtopia::GetPendingInvitedUsers(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<const FUniqueNetId>>& OutPendingInvitedUserArray) const
+{
+	return false;
+}
+
+bool FOnlinePartyUEtopia::GetPendingRequestsToJoin(const FUniqueNetId& LocalUserId, TArray<IOnlinePartyRequestToJoinInfoConstRef>& OutRequestsToJoin) const
 {
 	return false;
 }

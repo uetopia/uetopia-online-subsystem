@@ -374,10 +374,13 @@ void FOnlineFriendsUEtopia::QueryFriendSettings(const FUniqueNetId& LocalUserId,
 	return;
 }
 
+// removed in 5.0
+/*
 void FOnlineFriendsUEtopia::UpdateFriendSettings(const FUniqueNetId& LocalUserId, const FFriendSettings& NewSettings, FOnSettingsOperationComplete Delegate)
 {
 	return;
 }
+*/
 
 bool FOnlineFriendsUEtopia::QueryFriendSettings(const FUniqueNetId& UserId, const FString& Source, const FOnQueryFriendSettingsComplete& Delegate /*= FOnQueryFriendSettingsComplete()*/ )
 {

@@ -28,9 +28,12 @@ private:
 			if (Row == NULL)
 			{
 				// cannot have a better nickname here
-				FOnlineStatsRow NewRow(UserId.ToString(), MakeShareable(new FUniqueNetIdString(UserId.ToString(), TEXT("UEtopia"))));
-				NewRow.Rank = -1;
-				Rows.Add(NewRow);
+				// this changed in 5.0
+				// but we're not using this anyways...  TODO fix.
+				//FOnlineStatsRow NewRow(UserId.ToString(), MakeShareable(new FUniqueNetIdString(UserId.ToString(), TEXT("UEtopia"))));
+
+				//NewRow.Rank = -1;
+				//Rows.Add(NewRow);
 			}
 
 			check(FindPlayerRecord(UserId));

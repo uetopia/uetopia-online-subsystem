@@ -20,9 +20,10 @@ public:
 
 	/**
 	* Init/default constructor
+	* * changed in 5.0
 	*/
 	FOnlineTournamentUEtopia(const FString& InTournamentId = TEXT(""))
-		: TournamentId(new FUniqueNetIdString(InTournamentId))
+		: TournamentId(FUniqueNetIdString::Create(InTournamentId, TEXT("UEtopia")))
 	{
 	}
 

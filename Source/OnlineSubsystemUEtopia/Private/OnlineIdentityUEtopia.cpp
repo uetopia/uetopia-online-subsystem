@@ -153,7 +153,8 @@ void FOnlineIdentityUEtopia::TickLogin(float DeltaTime)
 				}
 				else
 				{
-					TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
+					// funiquenetid changed in 5.0
+					TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, *FUniqueNetIdString::Create(TEXT(""), TEXT("UEtopia")),
 						FString(TEXT("RegisterUser() failed to parse the user registration results")));
 				}
 			}
@@ -161,7 +162,8 @@ void FOnlineIdentityUEtopia::TickLogin(float DeltaTime)
 			else if (TotalCheckElapsedTime > MaxCheckElapsedTime)
 			{
 				bHasLoginOutstanding = false;
-				TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, FUniqueNetIdString(TEXT("")),
+				// funiquenetid changed in 5.0
+				TriggerOnLoginCompleteDelegates(LocalUserNumPendingLogin, false, *FUniqueNetIdString::Create(TEXT(""), TEXT("UEtopia")),
 					FString(TEXT("RegisterUser() timed out without getting the data")));
 			}
 		}
@@ -259,7 +261,8 @@ bool FOnlineIdentityUEtopia::Login(int32 LocalUserNum, const FOnlineAccountCrede
 	{
 		UE_LOG(LogOnline, Error, TEXT("RegisterUser() failed: %s"),
 			*ErrorStr);
-		TriggerOnLoginCompleteDelegates(LocalUserNum, false, FUniqueNetIdString(TEXT("")), ErrorStr);
+		// this changed in 5.0
+		TriggerOnLoginCompleteDelegates(LocalUserNum, false, *FUniqueNetIdString::Create(TEXT(""), TEXT("UEtopia")), ErrorStr);
 		return false;
 	}
 	return true;
@@ -804,7 +807,9 @@ FPlatformUserId FOnlineIdentityUEtopia::GetPlatformUserIdFromUniqueNetId(const F
 	for (int i = 0; i < MAX_LOCAL_PLAYERS; ++i)
 	{
 		auto CurrentUniqueId = GetUniquePlayerId(i);
+		// Changed in 5.0 - but can't figure it out
 		if (CurrentUniqueId.IsValid() && (*CurrentUniqueId == UniqueNetId))
+		//if (CurrentUniqueId.IsValid() && (*CurrentUniqueId == FPlatformMisc::GetPlatformUserForUserIndex() ))
 		{
 			return i;
 		}
@@ -849,7 +854,9 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 					// This changed in 4.20 - we need to pass the "Type" now for some odd reason.
 					// If the type is not passed, it gets set to "UNSET" which results in failures
 					// trying to look up the subsystem based on this type.
-					UserRef->UserIdPtr = MakeShareable(new FUniqueNetIdString(User.UserId, TEXT("UEtopia")));
+
+					// this changed in 5.0
+					UserRef->UserIdPtr = FUniqueNetIdString::Create(User.UserId, TEXT("UEtopia"));
 
 					// update the access token
 					UserRef->AuthTicket = PendingRegisterUser.AccessToken;
@@ -899,7 +906,9 @@ void FOnlineIdentityUEtopia::MeUser_HttpRequestComplete(FHttpRequestPtr HttpRequ
 		UE_LOG(LogOnline, Warning, TEXT("RegisterUser request failed. %s"), *ErrorStr);
 	}
 
-	TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, FUniqueNetIdString(User.UserId, TEXT("UEtopia")), ErrorStr);
+	// this changed in 5.0
+	//TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, FUniqueNetIdString(User.UserId, TEXT("UEtopia")), ErrorStr);
+	TriggerOnLoginCompleteDelegates(PendingRegisterUser.LocalUserNum, bResult, *FUniqueNetIdString::Create(User.UserId, TEXT("UEtopia")), ErrorStr);
 }
 
 

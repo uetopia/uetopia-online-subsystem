@@ -1,8 +1,8 @@
 # uetopia-online-subsystem
-Online Subsystem plugin for Unreal Engine 4
+Online Subsystem plugin for Unreal Engine 5
 
-4.27 Branch requires some OSS changes:  support for tournaments, and some extra delegates.
+5.0.0 Branch requires some OSS changes:  support for tournaments, and some extra delegates.
 
-You can use a pre-patched 4.27 engine here:
+You can use a pre-patched 5.0.0 engine here:
 
-https://github.com/uetopia/UnrealEngine/tree/4.27_UETOPIA
+https://github.com/uetopia/UnrealEngine/tree/5.0.0_UETOPIA

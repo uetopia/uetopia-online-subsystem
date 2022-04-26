@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
   "Version": 9,
-  "VersionName": "4.27",
+  "VersionName": "5.0",
   "FriendlyName": "UETOPIA",
   "Description": "Online Subsystem functionality. Connects games with the uetopia.com backend.",
   "Category": "Networking",
@@ -9,8 +9,8 @@
   "CreatedByURL": "https://uetopia.com",
   "DocsURL": "https://uetopia.com",
   "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4954417b921e47acb01d68f2bb493503",
-  "EngineVersion": "4.27.0",
-  "SupportURL": "https://uetopia.comm",
+  "EngineVersion": "5.0.0",
+  "SupportURL": "https://uetopia.com",
   "Modules": [
     {
       "Name": "OnlineSubsystemUEtopia",

@@ -44,7 +44,9 @@ public:
 
 	IOnlinePartyJoinInfoUEtopia(const FOnlinePartyData& inPartyData, const FString& InUserId, const FString& InPartyId = TEXT(""))
 		: PartyId(new FOnlinePartyIdUEtopia(InPartyId)),
-		LeaderId(new FUniqueNetIdString(InUserId, TEXT("UEtopia"))),
+		// this changed in 5.0
+		// LeaderId(new FUniqueNetIdString(InUserId, TEXT("UEtopia"))),
+		LeaderId(FUniqueNetIdString::Create(InUserId, TEXT("UEtopia"))),
 		PartyData(inPartyData)
 	{
 	}
@@ -172,6 +174,11 @@ public:
 	virtual bool CreateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId PartyTypeId, const FPartyConfiguration& PartyConfig, const FOnCreatePartyComplete& Delegate = FOnCreatePartyComplete()) override;
 	virtual bool UpdateParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FPartyConfiguration& PartyConfig, bool bShouldRegenerateReservationKey = false, const FOnUpdatePartyComplete& Delegate = FOnUpdatePartyComplete()) override;
 	virtual bool JoinParty(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnJoinPartyComplete& Delegate = FOnJoinPartyComplete()) override;
+
+	// added in 5.0
+	virtual void RequestToJoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyTypeId PartyTypeId, const FPartyInvitationRecipient& Recipient, const FOnRequestToJoinPartyComplete& Delegate = FOnRequestToJoinPartyComplete()) override;
+	virtual void ClearRequestToJoinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& Sender, EPartyRequestToJoinRemovedReason Reason) override;
+
 	virtual bool JIPFromWithinParty(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& PartyLeaderId) override;
 
 	virtual void QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityComplete& Delegate = FOnQueryPartyJoinabilityComplete()) override;
@@ -255,6 +262,10 @@ public:
 	//virtual bool GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<IOnlinePartyPendingJoinRequestInfo>>& OutPendingJoinRequestArray) const override;
 	virtual bool GetPendingJoinRequests(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<IOnlinePartyPendingJoinRequestInfoConstRef>& OutPendingJoinRequestArray) const override;
 	virtual bool GetPendingInvitedUsers(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, TArray<TSharedRef<const FUniqueNetId>>& OutPendingInvitedUserArray) const override;
+
+	//added in 5.0
+	bool GetPendingRequestsToJoin(const FUniqueNetId& LocalUserId, TArray<IOnlinePartyRequestToJoinInfoConstRef>& OutRequestsToJoin) const override;
+
 	virtual FString MakeJoinInfoJson(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId) override;
 	// changed in 4.23
 	// virtual IOnlinePartyJoinInfoConstPtr MakeJoinInfoFromJson(const FString& JoinInfoJson) = 0;
@@ -275,24 +286,33 @@ public:
 	TArray<TSharedRef<IOnlinePartyJoinInfo>> PendingInvitesArray;
 
 	/**
-	* List of all subscribe-able notifications
-	*
-	* OnPartyJoined
-	* OnPartyPromotionLockoutStateChanged
-	* OnPartyConfigChanged
-	* OnPartyDataChanged
-	* OnPartyMemberChanged
-	* OnPartyMemberExited
-	* OnPartyMemberJoined
-	* OnPartyMemberDataChanged
-	* OnPartyInvitesChanged
-	* OnPartyInviteRequestReceived
-	* OnPartyInviteReceived
-	* OnPartyInviteResponseReceived
-	* OnPartyJoinRequestReceived
-	* OnPartyJoinRequestResponseReceived
-	*
-	*/
+	 * List of all subscribe-able notifications
+	 *
+	 * OnPartyJoined
+	 * OnPartyExited
+	 * OnPartyStateChanged
+	 * OnPartyPromotionLockoutStateChanged
+	 * OnPartyConfigChanged
+	 * OnPartyDataReceived
+	 * OnPartyMemberPromoted
+	 * OnPartyMemberExited
+	 * OnPartyMemberJoined
+	 * OnPartyMemberDataReceived
+	 * OnPartyInvitesChanged
+	 * OnPartyInviteRequestReceived
+	 * OnPartyInviteReceived
+	 * OnPartyInviteReceivedEx
+	 * OnPartyInviteRemoved
+	 * OnPartyInviteRemovedEx
+	 * OnPartyInviteResponseReceived
+	 * OnPartyJoinRequestReceived
+	 * OnPartyQueryJoinabilityReceived
+	 * OnFillPartyJoinRequestData
+	 * OnPartyAnalyticsEvent
+	 * OnPartySystemStateChange
+	 * OnPartyRequestToJoinReceived
+	 * OnPartyRequestToJoinRemoved
+	 */
 
 private:
 	/** For accessing identity/token info of user logged in */

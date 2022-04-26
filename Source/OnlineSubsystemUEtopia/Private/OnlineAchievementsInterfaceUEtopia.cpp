@@ -32,7 +32,16 @@ void FOnlineAchievementsUEtopia::WriteAchievements(const FUniqueNetId& PlayerId,
 		return;
 	}
 
-	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia") );
+	// this changed in 5.0
+	//FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia") );
+
+	//  oss steam does it like this:
+	// const FUniqueNetIdSteam& SteamId = FUniqueNetIdSteam::Cast(PlayerId);
+
+	// but we don't use this anyway.   TODO - fix
+
+	/*
+
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
 	{
@@ -59,6 +68,7 @@ void FOnlineAchievementsUEtopia::WriteAchievements(const FUniqueNetId& PlayerId,
 
 	WriteObject->WriteState = EOnlineAsyncTaskState::Done;
 	Delegate.ExecuteIfBound(PlayerId, true);
+	*/
 };
 
 void FOnlineAchievementsUEtopia::QueryAchievements( const FUniqueNetId& PlayerId, const FOnQueryAchievementsCompleteDelegate& Delegate )
@@ -70,6 +80,10 @@ void FOnlineAchievementsUEtopia::QueryAchievements( const FUniqueNetId& PlayerId
 		return;
 	}
 
+
+	// this changed in 5.0 - but we don't use this.
+	// TODO - fix
+	/*
 	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia") );
 	if (!PlayerAchievements.Find(UEtopiaId))
 	{
@@ -86,6 +100,7 @@ void FOnlineAchievementsUEtopia::QueryAchievements( const FUniqueNetId& PlayerId
 	}
 
 	Delegate.ExecuteIfBound(PlayerId, true);
+	*/
 }
 
 void FOnlineAchievementsUEtopia::QueryAchievementDescriptions( const FUniqueNetId& PlayerId, const FOnQueryAchievementsCompleteDelegate& Delegate )
@@ -119,6 +134,9 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievement(const
 		return EOnlineCachedResult::NotFound;
 	}
 
+	// this changed in 5.0
+	// TODO - fix
+	/*
 	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
@@ -136,6 +154,7 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievement(const
 			return EOnlineCachedResult::Success;
 		}
 	}
+	*/
 
 	// no such achievement
 	return EOnlineCachedResult::NotFound;
@@ -149,6 +168,9 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievements(cons
 		return EOnlineCachedResult::NotFound;
 	}
 
+	// this changed in 5.0
+	// TODO - fix
+	/*
 	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	const TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
@@ -158,7 +180,9 @@ EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievements(cons
 	}
 
 	OutAchievements = *PlayerAch;
+	*/
 	return EOnlineCachedResult::Success;
+	
 };
 
 EOnlineCachedResult::Type FOnlineAchievementsUEtopia::GetCachedAchievementDescription(const FString& AchievementId, FOnlineAchievementDesc& OutAchievementDesc)
@@ -196,6 +220,10 @@ bool FOnlineAchievementsUEtopia::ResetAchievements(const FUniqueNetId& PlayerId)
 		return false;
 	}
 
+
+	// this changed in 5.0
+	// TODO -fix
+	/*
 	FUniqueNetIdString UEtopiaId(PlayerId.ToString(), TEXT("UEtopia"));
 	TArray<FOnlineAchievement> * PlayerAch = PlayerAchievements.Find(UEtopiaId);
 	if (NULL == PlayerAch)
@@ -212,6 +240,7 @@ bool FOnlineAchievementsUEtopia::ResetAchievements(const FUniqueNetId& PlayerId)
 		(*PlayerAch)[ AchIdx ].Progress = 0.0;
 	}
 
+	*/
 	return true;
 };
 #endif // !UE_BUILD_SHIPPING
