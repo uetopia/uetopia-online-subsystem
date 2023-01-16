@@ -419,10 +419,6 @@ bool FOnlinePartyUEtopia::JIPFromWithinParty(const FUniqueNetId& LocalUserId, co
 	return false;
 }
 
-void FOnlinePartyUEtopia::QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityComplete& Delegate /*= FOnQueryPartyJoinabilityComplete() */)
-{
-	return;
-}
 
 void FOnlinePartyUEtopia::QueryPartyJoinability(const FUniqueNetId& LocalUserId, const IOnlinePartyJoinInfo& OnlinePartyJoinInfo, const FOnQueryPartyJoinabilityCompleteEx& Delegate)
 {
@@ -552,11 +548,6 @@ bool FOnlinePartyUEtopia::ApproveJIPRequest(const FUniqueNetId& LocalUserId, con
 	return false;
 }
 
-void FOnlinePartyUEtopia::RespondToQueryJoinability(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bCanJoin, int32 DeniedResultCode /*= 0 */)
-{
-	return;
-}
-
 void FOnlinePartyUEtopia::RespondToQueryJoinability(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& RecipientId, bool bCanJoin, int32 DeniedResultCode, FOnlinePartyDataConstPtr PartyData)
 {
 	return;
@@ -672,6 +663,12 @@ void FOnlinePartyUEtopia::SendInvitation_HttpRequestComplete(FHttpRequestPtr Htt
 	return;
 }
 
+void FOnlinePartyUEtopia::CancelInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& TargetUserId, const FOnlinePartyId& PartyId, const FOnCancelPartyInvitationComplete& Delegate)
+{
+	return;
+}
+
+
 
 bool FOnlinePartyUEtopia::RejectInvitation(const FUniqueNetId& LocalUserId, const FUniqueNetId& SenderId)
 {
@@ -772,29 +769,7 @@ bool FOnlinePartyUEtopia::PromoteMember(const FUniqueNetId& LocalUserId, const F
 	return false;
 }
 
-bool FOnlinePartyUEtopia::UpdatePartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyData& PartyData)
-{
-	/**
-	* Set party data and broadcast to all members
-	* Only current data can be set and no history of past party data is preserved
-	* Party members notified of new data (see FOnPartyDataReceived)
-	*
-	* @param LocalUserId - user making the request
-	* @param PartyId - id of an existing party
-	* @param PartyData - data to send to all party members
-	* @param Delegate - called on completion
-	*
-	* @return true if task was started
-	*/
-	return false;
-}
-
 bool FOnlinePartyUEtopia::UpdatePartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FName& Namespace, const FOnlinePartyData& PartyData)
-{
-	return false;
-}
-
-bool FOnlinePartyUEtopia::UpdatePartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FOnlinePartyData& PartyMemberData)
 {
 	return false;
 }
@@ -829,17 +804,7 @@ FOnlinePartyMemberConstPtr FOnlinePartyUEtopia::GetPartyMember(const FUniqueNetI
 	return nullptr;
 }
 
-FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId) const
-{
-	return nullptr;
-}
-
 FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FName& Namespace) const
-{
-	return nullptr;
-}
-
-FOnlinePartyDataConstPtr FOnlinePartyUEtopia::GetPartyMemberData(const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& MemberId) const
 {
 	return nullptr;
 }

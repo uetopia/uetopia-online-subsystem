@@ -8,7 +8,7 @@
 #include "OnlineAsyncTaskManagerUEtopia.h"
 #include "SocketSubsystem.h"
 #include "LANBeacon.h"
-#include "NboSerializerUEtopia.h"
+//#include "NboSerializerUEtopia.h"
 #include "OnlineSubsystemUEtopiaTypes.h"
 #include "VoiceInterface.h"
 
@@ -333,6 +333,10 @@ uint32 FOnlineSessionUEtopia::UpdateLANStatus()
 {
 	uint32 Result = ONLINE_SUCCESS;
 
+	// something broke in 5.1 - do we use this>?
+
+	/*
+
 	if (NeedsToAdvertise())
 	{
 		// set up LAN session
@@ -355,6 +359,7 @@ uint32 FOnlineSessionUEtopia::UpdateLANStatus()
 			LANSessionManager.StopLANSession();
 		}
 	}
+	*/
 
 	return Result;
 }
@@ -1176,6 +1181,10 @@ uint32 FOnlineSessionUEtopia::FindLANSession()
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Find LAN"));
 	/* UNUSED REMOVE */
+	
+
+	// broken in 5.1 - do we use this?
+	/*
 	uint32 Return = ONLINE_IO_PENDING;
 
 	// Recreate the unique identifier for this client
@@ -1197,7 +1206,8 @@ uint32 FOnlineSessionUEtopia::FindLANSession()
 		// Just trigger the delegate as having failed
 		TriggerOnFindSessionsCompleteDelegates(false);
 	}
-	return Return;
+	*/
+	return ONLINE_IO_PENDING;
 }
 
 bool FOnlineSessionUEtopia::CancelFindSessions()
@@ -1706,6 +1716,8 @@ bool FOnlineSessionUEtopia::UnregisterPlayers(FName SessionName, const TArray< T
 	return bSuccess;
 }
 
+
+
 void FOnlineSessionUEtopia::Tick(float DeltaTime)
 {
 	//UE_LOG(LogTemp, Log, TEXT("[UETOPIA] FOnlineSessionUEtopia::Tick"));
@@ -1713,6 +1725,7 @@ void FOnlineSessionUEtopia::Tick(float DeltaTime)
 	TickLanTasks(DeltaTime);
 	TickMatchmakerTasks(DeltaTime);
 }
+
 
 void FOnlineSessionUEtopia::TickMatchmakerTasks(float DeltaTime)
 {
@@ -1732,13 +1745,17 @@ void FOnlineSessionUEtopia::TickMatchmakerTasks(float DeltaTime)
 
 void FOnlineSessionUEtopia::TickLanTasks(float DeltaTime)
 {
-	LANSessionManager.Tick(DeltaTime);
+	// changed or broken in 5.1
+	// LANSessionManager.Tick(DeltaTime);
 }
 
 void FOnlineSessionUEtopia::AppendSessionToPacket(FNboSerializeToBufferUEtopia& Packet, FOnlineSession* Session)
 {
 	UE_LOG(LogTemp, Log, TEXT("[UETOPIA] Online Session Append to Packet"));
-	/** Owner of the session */
+
+	// broke in 5.1 - we're not using
+	/*
+
 	Packet << *StaticCastSharedPtr<const FUniqueNetIdString>(Session->OwningUserId) // TODO - Add type here?  
 		<< Session->OwningUserName
 		<< Session->NumOpenPrivateConnections
@@ -1752,6 +1769,7 @@ void FOnlineSessionUEtopia::AppendSessionToPacket(FNboSerializeToBufferUEtopia& 
 
 	// Now append per game settings
 	AppendSessionSettingsToPacket(Packet, &Session->SessionSettings);
+	*/
 }
 
 void FOnlineSessionUEtopia::AppendSessionSettingsToPacket(FNboSerializeToBufferUEtopia& Packet, FOnlineSessionSettings* SessionSettings)
@@ -1759,6 +1777,9 @@ void FOnlineSessionUEtopia::AppendSessionSettingsToPacket(FNboSerializeToBufferU
 #if DEBUG_LAN_BEACON
 	UE_LOG_ONLINE(Verbose, TEXT("Sending session settings to client"));
 #endif
+
+	// something broke here in 5.1  Do we even use this?
+	/*
 
 	// Members of the session settings class
 	Packet << SessionSettings->NumPublicConnections
@@ -1787,6 +1808,7 @@ void FOnlineSessionUEtopia::AppendSessionSettingsToPacket(FNboSerializeToBufferU
 	}
 
 	// Add count of advertised keys and the data
+	
 	Packet << (int32)NumAdvertisedProperties;
 	for (FSessionSettings::TConstIterator It(SessionSettings->Settings); It; ++It)
 	{
@@ -1800,10 +1822,14 @@ void FOnlineSessionUEtopia::AppendSessionSettingsToPacket(FNboSerializeToBufferU
 #endif
 		}
 	}
+	*/
 }
 
 void FOnlineSessionUEtopia::OnValidQueryPacketReceived(uint8* PacketData, int32 PacketLength, uint64 ClientNonce)
 {
+	// broken in 5.1 - do we even use this?
+
+	/*
 	// Iterate through all registered sessions and respond for each one that can be joinable
 	FScopeLock ScopeLock(&SessionLock);
 	for (int32 SessionIndex = 0; SessionIndex < Sessions.Num(); SessionIndex++)
@@ -1820,6 +1846,7 @@ void FOnlineSessionUEtopia::OnValidQueryPacketReceived(uint8* PacketData, int32 
 			{
 				FNboSerializeToBufferUEtopia Packet(LAN_BEACON_MAX_PACKET_SIZE);
 				// Create the basic header before appending additional information
+				
 				LANSessionManager.CreateHostResponsePacket(Packet, ClientNonce);
 
 				// Add all the session details
@@ -1834,9 +1861,11 @@ void FOnlineSessionUEtopia::OnValidQueryPacketReceived(uint8* PacketData, int32 
 				{
 					UE_LOG_ONLINE(Warning, TEXT("LAN broadcast packet overflow, cannot broadcast on LAN"));
 				}
+				
 			}
 		}
 	}
+	*/
 }
 
 void FOnlineSessionUEtopia::ReadSessionFromPacket(FNboSerializeFromBufferUEtopia& Packet, FOnlineSession* Session)
@@ -1845,7 +1874,7 @@ void FOnlineSessionUEtopia::ReadSessionFromPacket(FNboSerializeFromBufferUEtopia
 	UE_LOG_ONLINE(Verbose, TEXT("Reading session information from server"));
 #endif
 
-	/** Owner of the session */
+	/** broke in 5.1 do we even use this 
 	FUniqueNetIdString* UniqueId = new FUniqueNetIdString;
 	Packet >> *UniqueId
 		>> Session->OwningUserName
@@ -1862,6 +1891,7 @@ void FOnlineSessionUEtopia::ReadSessionFromPacket(FNboSerializeFromBufferUEtopia
 
 	// Read any per object data using the server object
 	ReadSettingsFromPacket(Packet, Session->SessionSettings);
+	*/
 }
 
 void FOnlineSessionUEtopia::ReadSettingsFromPacket(FNboSerializeFromBufferUEtopia& Packet, FOnlineSessionSettings& SessionSettings)
@@ -1869,6 +1899,9 @@ void FOnlineSessionUEtopia::ReadSettingsFromPacket(FNboSerializeFromBufferUEtopi
 #if DEBUG_LAN_BEACON
 	UE_LOG_ONLINE(Verbose, TEXT("Reading game settings from server"));
 #endif
+
+	// broke in 5.1 - do we even use this
+	/*
 
 	// Clear out any old settings
 	SessionSettings.Settings.Empty();
@@ -1906,10 +1939,17 @@ void FOnlineSessionUEtopia::ReadSettingsFromPacket(FNboSerializeFromBufferUEtopi
 	int32 NumAdvertisedProperties = 0;
 	// First, read the number of advertised properties involved, so we can presize the array
 	Packet >> NumAdvertisedProperties;
+
+	// something broke here in 5.1
+	// muting for now.  Do we even use this?
+	
+
 	if (Packet.HasOverflow() == false)
 	{
 		FName Key;
 		// Now read each context individually
+
+		
 		for (int32 Index = 0;
 		Index < NumAdvertisedProperties && Packet.HasOverflow() == false;
 			Index++)
@@ -1923,7 +1963,9 @@ void FOnlineSessionUEtopia::ReadSettingsFromPacket(FNboSerializeFromBufferUEtopi
 			UE_LOG_ONLINE(Verbose, TEXT("%s"), *Setting->ToString());
 #endif
 		}
+		
 	}
+	
 
 	// If there was an overflow, treat the string settings/properties as broken
 	if (Packet.HasOverflow())
@@ -1931,10 +1973,13 @@ void FOnlineSessionUEtopia::ReadSettingsFromPacket(FNboSerializeFromBufferUEtopi
 		SessionSettings.Settings.Empty();
 		UE_LOG_ONLINE(Verbose, TEXT("Packet overflow detected in ReadGameSettingsFromPacket()"));
 	}
+	*/
 }
 
 void FOnlineSessionUEtopia::OnValidResponsePacketReceived(uint8* PacketData, int32 PacketLength)
 {
+	// broke in 5.1 do we use this?
+	/*
 	// Create an object that we'll copy the data to
 	FOnlineSessionSettings NewServer;
 	if (CurrentSessionSearch.IsValid())
@@ -1957,13 +2002,16 @@ void FOnlineSessionUEtopia::OnValidResponsePacketReceived(uint8* PacketData, int
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to create new online game settings object"));
 	}
+	*/
 }
 
 uint32 FOnlineSessionUEtopia::FinalizeLANSearch()
 {
 	if (LANSessionManager.GetBeaconState() == ELanBeaconState::Searching)
 	{
-		LANSessionManager.StopLANSession();
+		// this broke in 5.1
+		// unused?
+		//LANSessionManager.StopLANSession();
 	}
 
 	return UpdateLANStatus();

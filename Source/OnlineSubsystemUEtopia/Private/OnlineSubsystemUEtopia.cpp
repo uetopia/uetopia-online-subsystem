@@ -86,11 +86,6 @@ IOnlineTitleFilePtr FOnlineSubsystemUEtopia::GetTitleFileInterface() const
 	return nullptr;
 }
 
-IOnlineStorePtr FOnlineSubsystemUEtopia::GetStoreInterface() const
-{
-	return nullptr;
-}
-
 IOnlineEventsPtr FOnlineSubsystemUEtopia::GetEventsInterface() const
 {
 	return nullptr;
@@ -301,6 +296,15 @@ bool FOnlineSubsystemUEtopia::Shutdown()
 
 	UEtopiaFriends = nullptr;
 
+	// Shut down socketIO connection
+#if !UE_SERVER
+	if (NativeClient.IsValid())
+	{
+		ISocketIOClientModule::Get().ReleaseNativePointer(NativeClient);
+		NativeClient = nullptr;
+	}
+#endif
+
 #define DESTRUCT_INTERFACE(Interface) \
  	if (Interface.IsValid()) \
  	{ \
@@ -355,20 +359,29 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 	if (bIsConnected)
 	{
 		SessionId = NativeClient->SessionId;
-		AddressAndPort = NativeClient->AddressAndPort;
+		// changed in 5.1
+		 // URLParams
+		AddressAndPort = NativeClient->URLParams.AddressAndPort;
+		//AddressAndPort = NativeClient->AddressAndPort;
 	}
 
-	NativeClient->OnConnectedCallback = [this](const FString& InSessionId)
+	// NativeClient->OnConnectedCallback = [this](const FString& InSessionId)
+
+	// this changed in 5.1
+
+	NativeClient->OnConnectedCallback = [this](const FString& InSocketId, const FString& InSessionId )
 	{
-		FCULambdaRunnable::RunShortLambdaOnGameThread([this, InSessionId]
+		FCULambdaRunnable::RunShortLambdaOnGameThread([this, InSocketId, InSessionId]
 		{
 			if (this)
 			{
 				bIsConnected = true;
 				SessionId = InSessionId;
+				SocketId = InSocketId;
 
-				UE_LOG(LogTemp, Log, TEXT("SocketIO Connected with session: %s"), *SessionId);
-				UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect Connected with session: %s"), *SessionId);
+				UE_LOG(LogTemp, Log, TEXT("SocketIO Connected with SocketId: %s"), *SocketId);
+				UE_LOG(LogTemp, Log, TEXT("SocketIO Connected with SessionId: %s"), *SessionId);
+				UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia:: Connected with session: %s"), *SessionId);
 
 				//OnConnected.Broadcast(SessionId, bIsHavingConnectionProblems);
 				bIsHavingConnectionProblems = false;
@@ -377,6 +390,7 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 			}
 		});
 	};
+	
 
 	NativeClient->OnNamespaceConnectedCallback = [this](const FString& Namespace)
 	{
@@ -788,7 +802,10 @@ void FOnlineSubsystemUEtopia::SetupCallbacks()
 
 
 		// DEFINE_ONLINE_DELEGATE_THREE_PARAM(OnPartyInviteReceived, const FUniqueNetId& LocalUserId, const FOnlinePartyId& PartyId, const FUniqueNetId& SenderId);
-		this->GetPartyInterface()->TriggerOnPartyInviteReceivedDelegates(*localUNetId, *PartyIdPtr, *SenderUserIdPtr);
+		// Changed in 5.1 ....  
+
+		// Muting for now...  TODO fix this
+		//this->GetPartyInterface()->TriggerOnPartyInviteReceivedDelegates(*localUNetId, *PartyIdPtr, *SenderUserIdPtr);
 
 
 	}, FString("/"));
@@ -946,7 +963,7 @@ void FOnlineSubsystemUEtopia::ClearCallbacks()
 
 	if (NativeClient.IsValid())
 	{
-		NativeClient->ClearCallbacks();
+		NativeClient->ClearAllCallbacks();
 	}
 
 #endif
@@ -970,6 +987,9 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 	{
 		UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::Connect bPluginScopedConnection"));
 		NativeClient = ISocketIOClientModule::Get().ValidSharedNativePointer(PluginScopedId, false, false);
+
+		//Enforcement: This is the default FSocketIONative option value, but this component depends on it being true.
+		NativeClient->bCallbackOnGameThread = true;
 	}
 	else
 	{
@@ -1003,7 +1023,8 @@ void FOnlineSubsystemUEtopia::Connect(const FString& InAddressAndPort, USIOJsonO
 	NativeClient->ReconnectionDelay = ReconnectionDelayInMs;
 	NativeClient->VerboseLog = bVerboseConnectionLog;
 
-	ConnectNative(InAddressAndPort, QueryFJson, HeadersFJson);
+	//ConnectNative(InAddressAndPort, QueryFJson, HeadersFJson);'
+	ConnectNative(InAddressAndPort, nullptr, nullptr);
 
 #endif
 }
@@ -1013,7 +1034,19 @@ void FOnlineSubsystemUEtopia::ConnectNative(const FString& InAddressAndPort, con
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSubsystemUEtopia::ConnectNative"));
 #if !UE_SERVER
-	NativeClient->Connect(InAddressAndPort, Query, Headers);
+
+	// this changed in 5.1 
+	//  from SocketIOClientComponent.cpp
+	FSIOConnectParams Params;
+	Params.AddressAndPort = InAddressAndPort;
+	//Params.Path = InPath;
+	//Params.AuthToken = InAuthToken;
+
+	//Params.Query = USIOMessageConvert::JsonObjectToFStringMap(Query);
+	//Params.Headers = USIOMessageConvert::JsonObjectToFStringMap(Headers);
+
+	NativeClient->Connect(Params);
+
 #endif
 }
 

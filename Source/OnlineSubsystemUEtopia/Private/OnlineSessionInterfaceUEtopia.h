@@ -217,6 +217,7 @@ PACKAGE_SCOPE:
 
 	/**
 	 * Session tick for various background tasks
+	 * 5.1 this broke ?
 	 */
 	void Tick(float DeltaTime);
 

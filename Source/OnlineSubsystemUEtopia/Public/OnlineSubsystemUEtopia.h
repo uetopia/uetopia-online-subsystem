@@ -59,7 +59,8 @@ public:
 	virtual IOnlineIdentityPtr GetIdentityInterface() const override;
 	virtual IOnlineTitleFilePtr GetTitleFileInterface() const override;
 	// deprecated in 4.26 - Unused
-	virtual IOnlineStorePtr GetStoreInterface() const override;
+	// removed in 5.0 - unused
+	//virtual IOnlineStorePtr GetStoreInterface() const override;
 	virtual IOnlineStoreV2Ptr GetStoreV2Interface() const override { return nullptr; }   // 4.11
 	virtual IOnlinePurchasePtr GetPurchaseInterface() const override { return nullptr; } // 4.11
 	virtual IOnlineEventsPtr GetEventsInterface() const override;
@@ -116,6 +117,10 @@ public:
 	/** When connected this session id will be valid and contain a unique Id. */
 	UPROPERTY(BlueprintReadWrite, Category = "SocketIO Properties")
 		FString SessionId;
+
+	/** When connected this session id will be valid and contain a socket Id. */
+	UPROPERTY(BlueprintReadWrite, Category = "SocketIO Properties")
+		FString SocketId;
 
 	/**
 	* Toggle which enables plugin scoped connections.

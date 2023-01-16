@@ -67,7 +67,9 @@ inline FString GenerateRandomUserId(int32 LocalUserNum)
 
 	const bool bForceUniqueId = FParse::Param( FCommandLine::Get(), TEXT( "StableUEtopiaID" ) );
 
-	if ( ( GIsFirstInstance || bForceUniqueId ) && !GIsEditor )
+	// Warning	C4996	'GIsFirstInstance': Please use `FPlatformProcess: : IsFirstInstance()` Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.ExampleGame	C : \ExampleGame - 5.1.0\Plugins\OnlineSubsystemUEtopia\Source\OnlineSubsystemUEtopia\Private\OnlineIdentityUEtopia.cpp	70
+
+	if ( (FPlatformProcess::IsFirstInstance() || bForceUniqueId ) && !GIsEditor )
 	{
 		// When possible, return a stable user id
 		return FString::Printf( TEXT( "%s-%s" ), *HostName, *FPlatformMisc::GetLoginId() );
@@ -811,7 +813,10 @@ FPlatformUserId FOnlineIdentityUEtopia::GetPlatformUserIdFromUniqueNetId(const F
 		if (CurrentUniqueId.IsValid() && (*CurrentUniqueId == UniqueNetId))
 		//if (CurrentUniqueId.IsValid() && (*CurrentUniqueId == FPlatformMisc::GetPlatformUserForUserIndex() ))
 		{
-			return i;
+			// 5.0 change
+			// Warning	C4996	'FPlatformUserId::FPlatformUserId': Implicit conversion from user index is deprecated, use FPlatformMisc::GetPlatformUserForUserIndex Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.ExampleGame	C : \ExampleGame - 5.1.0\Plugins\OnlineSubsystemUEtopia\Source\OnlineSubsystemUEtopia\Private\OnlineIdentityUEtopia.cpp	816
+
+			return FPlatformMisc::GetPlatformUserForUserIndex(i);
 		}
 	}
 
