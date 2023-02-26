@@ -1,3 +1,7 @@
+# DEPRECATED
+
+Use [unlockd Online Subsystem](https://github.com/unlockd-gg/online-subsystem) instead.
+
 # uetopia-online-subsystem
 Online Subsystem plugin for Unreal Engine 4
 
